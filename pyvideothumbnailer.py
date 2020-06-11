@@ -35,6 +35,23 @@ DEFAULT_SKIP_SECONDS = 10.0
 
 PIL_COLOR_WHITE = ImageColor.getrgb('white')
 
+def format_size(size: int, suffix: str = 'B') -> str:
+    """
+    Formats an integer size value to make it human-readable.
+
+    Parameters:
+    size (int): The size value to format.
+    suffix (str): The suffix denoting the base unit, default: 'B' for byte
+
+    Returns:
+    str: A human-readable representation of the size value.
+    """
+    for unit in ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
+        if abs(size) < 1024.0:
+            return '{:.2f} {}{}'.format(size, unit, suffix)
+        size /= 1024.0
+    return '{:.2f} {}{}'.format(size, 'Yi', suffix)
+
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
                               skip_seconds: float, verbose: bool) -> None:
     """
