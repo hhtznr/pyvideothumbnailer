@@ -430,22 +430,18 @@ def parse_args() -> Namespace:
     parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.',
                             formatter_class=ArgumentDefaultsHelpFormatter)
     parser.add_argument('--width',
-                         nargs=1,
                          type=int,
                          default=DEFAULT_WIDTH,
                          help='The intended width of the preview thumbnails image in px. Actual width may be slightly less due rounding upon scaling.')
     parser.add_argument('--columns',
-                         nargs=1,
                          type=int,
                          default=DEFAULT_COLUMNS,
                          help='The number of preview thumbnail columns.')
     parser.add_argument('--rows',
-                         nargs=1,
                          type=int,
                          default=DEFAULT_ROWS,
                          help='The number of preview thumbnail rows.')
     parser.add_argument('--spacing',
-                         nargs=1,
                          type=int,
                          default=DEFAULT_SPACING,
                          help='The spacing between and around the preview thumbnails in px.')
@@ -468,12 +464,10 @@ def parse_args() -> Namespace:
                          default=DEFAULT_TIMESTAMP_FONT_SIZE,
                          help='The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.')
     parser.add_argument('--skip-seconds',
-                         nargs=1,
                          type=float,
                          default=DEFAULT_SKIP_SECONDS,
                          help='The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.')
     parser.add_argument('--jpeg-quality',
-                         nargs=1,
                          type=int,
                          default=DEFAULT_JPEG_QUALITY,
                          help='The quality of the JPEG image files that are created.')
