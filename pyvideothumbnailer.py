@@ -370,7 +370,7 @@ def has_video_extension(file_name: str) -> bool:
 
 def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, jpeg_quality: int, verbose: bool) -> None:
+                              skip_seconds: float, jpeg_quality: int, raise_errors: bool, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -392,6 +392,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     jpeg_quality (int): The quality of the JPEG image files that are created.
+    raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
     verbose (bool): Print verbose information and messages.
     """
     # List of files and directories to process
@@ -424,7 +425,10 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
                                           header_font_name, header_font_size, timestamp_font_name, timestamp_font_size,
                                           skip_seconds, jpeg_quality, verbose)
             except Exception as e:
-                print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
+                if raise_errors:
+                    raise e
+                else:
+                    print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
 def parse_args() -> Namespace:
     parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.',
@@ -474,6 +478,10 @@ def parse_args() -> Namespace:
     parser.add_argument('--recursive',
                          action='store_true',
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
+    parser.add_argument('--raise-errors',
+                         action='store_true',
+                         help="""Stop if an error occurs by raising it. By default, errors are ignored and the affected preview thumbnails image is skipped.
+                         This is useful, when processing multiple video files in a directory.""")
     parser.add_argument('--verbose',
                          action='store_true',
                          help='Print verbose information and messages.')
@@ -490,4 +498,4 @@ if __name__ == '__main__':
     args = parse_args()
     process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
                               args.header_font, args.header_font_size, args.timestamp_font, args.timestamp_font_size,
-                              args.skip_seconds, args.jpeg_quality, args.verbose)
+                              args.skip_seconds, args.jpeg_quality, args.raise_errors, args.verbose)
