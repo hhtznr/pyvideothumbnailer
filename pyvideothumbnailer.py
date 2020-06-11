@@ -33,6 +33,10 @@ DEFAULT_WIDTH = 800
 DEFAULT_COLUMNS = 4
 DEFAULT_ROWS = 3
 DEFAULT_SPACING = 2
+DEFAULT_HEADER_FONT_NAME = None
+DEFAULT_HEADER_FONT_SIZE = 14
+DEFAULT_TIMESTAMP_FONT_NAME = None
+DEFAULT_TIMESTAMP_FONT_SIZE = 12
 DEFAULT_SKIP_SECONDS = 10.0
 DEFAULT_JPEG_QUALITY = 95
 
@@ -89,6 +93,7 @@ def format_bit_rate(bits_per_second: int) -> str:
     return '{} kb/s'.format(int(round(bits_per_second / 1000.0, 0)))
 
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
+                              header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
                               skip_seconds: float, jpeg_quality: int, verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
@@ -99,6 +104,12 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     columns (int): The number of thumbnail columns.
     rows (int): The number of thumbnail rows.
     spacing (int): The spacing in pixels between and around the preview thumbnails.
+    header_font_name (str): The name of a true type font to use for the header text providing information on the video file and its metadata.
+                            If omitted, a built-in default font is used.
+    header_font_size (int): The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.
+    timestamp_font_name (str): The name of a true type font to use for the preview thumbnail timestamps.
+                               If omitted, a built-in default font is used.
+    timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     jpeg_quality (int): The quality of the JPEG image file that is created.
     verbose (bool): Print verbose information and messages.
@@ -236,7 +247,11 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     # Spacing between the header text lines
     text_line_spacing = 2
     # Font for the header texts
-    header_font = ImageFont.load_default()
+    header_font = None
+    if header_font_name is None:
+        header_font = ImageFont.load_default()
+    else:
+        header_font = ImageFont.truetype(font=header_font_name, size=header_font_size)
 
     # Height of the header texts
     text_height_file_info = header_font.getsize(file_info)[1]
@@ -285,7 +300,11 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     thumbnails_draw.text((x, y), audio_info, PIL_COLOR_BLACK, font=header_font)
 
     # Font for timestamp texts
-    timestamp_font = ImageFont.load_default()
+    timestamp_font = None
+    if timestamp_font_name is None:
+        timestamp_font = ImageFont.load_default()
+    else:
+        timestamp_font = ImageFont.truetype(font=timestamp_font_name, size=timestamp_font_size)
     x_spacing_timestamp = 2
     y_spacing_timestamp = 2
     timestamp_shadow_offset = 1
@@ -350,6 +369,7 @@ def has_video_extension(file_name: str) -> bool:
     return file_name.lower().endswith(VIDEO_EXTENSIONS)
 
 def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
+                              header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
                               skip_seconds: float, jpeg_quality: int, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
@@ -364,6 +384,12 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     columns (int): The number of thumbnail columns.
     rows (int): The number of thumbnail rows.
     spacing (int): The spacing in pixels between and around the preview thumbnails.
+    header_font_name (str): The name of a true type font to use for the header text providing information on the video file and its metadata.
+                            If omitted, a built-in default font is used.
+    header_font_size (int): The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.
+    timestamp_font_name (str): The name of a true type font to use for the preview thumbnail timestamps.
+                               If omitted, a built-in default font is used.
+    timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     jpeg_quality (int): The quality of the JPEG image files that are created.
     verbose (bool): Print verbose information and messages.
@@ -394,7 +420,9 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
             try:
-                create_preview_thumbnails(file_path, width, columns, rows, spacing, skip_seconds, jpeg_quality, verbose)
+                create_preview_thumbnails(file_path, width, columns, rows, spacing,
+                                          header_font_name, header_font_size, timestamp_font_name, timestamp_font_size,
+                                          skip_seconds, jpeg_quality, verbose)
             except Exception as e:
                 print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
@@ -421,6 +449,24 @@ def parse_args() -> Namespace:
                          type=int,
                          default=DEFAULT_SPACING,
                          help='The spacing between and around the preview thumbnails in px.')
+    parser.add_argument('--header-font',
+                         type=str,
+                         default=DEFAULT_HEADER_FONT_NAME,
+                         help=""""The name of a true type font to use for the header text providing information on the video file and its metadata.
+                         If omitted, a built-in default font is used.""")
+    parser.add_argument('--header-font-size',
+                         type=int,
+                         default=DEFAULT_HEADER_FONT_SIZE,
+                         help='The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.')
+    parser.add_argument('--timestamp-font',
+                         type=str,
+                         default=DEFAULT_TIMESTAMP_FONT_NAME,
+                         help=""""The name of a true type font to use for the preview thumbnail timestamps.
+                         If omitted, a built-in default font is used.""")
+    parser.add_argument('--timestamp-font-size',
+                         type=int,
+                         default=DEFAULT_TIMESTAMP_FONT_SIZE,
+                         help='The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.')
     parser.add_argument('--skip-seconds',
                          nargs=1,
                          type=float,
@@ -449,4 +495,5 @@ def parse_args() -> Namespace:
 if __name__ == '__main__':
     args = parse_args()
     process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
+                              args.header_font, args.header_font_size, args.timestamp_font, args.timestamp_font_size,
                               args.skip_seconds, args.jpeg_quality, args.verbose)
