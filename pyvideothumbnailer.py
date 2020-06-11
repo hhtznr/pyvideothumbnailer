@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 from argparse import Namespace
 
 import os
+import sys
 
 VIDEO_EXTENSIONS = ('.avi',
                     '.divx',
@@ -76,7 +77,10 @@ def process_file_or_directory(path: str, recursive: bool) -> None:
             process_file_or_directory(file_path, True)
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
-            create_preview_thumbnails(file_path)
+            try:
+                create_preview_thumbnails(file_path)
+            except Exception as e:
+                print('An exception occurred: {}.\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
 def parse_args() -> Namespace:
     parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.',
