@@ -6,6 +6,31 @@ from argparse import Namespace
 
 import os
 
+VIDEO_EXTENSIONS = ('.avi',
+                    '.divx',
+                    '.flv',
+                    '.m4v',
+                    '.mkv',
+                    '.mov',
+                    '.mp4',
+                    '.mpg',
+                    '.wmv')
+
+def has_video_extension(file_name: str) -> bool:
+    """
+    Checks if a file name ends with a video extension.
+
+    Checks if the provided file name ends with an extension that is common
+    for video files. The check is case-insensitive.
+
+    Parameters:
+    file_name (str): The file name to check.
+
+    Returns:
+    bool: True if the file name ends with a common video extension, False otherwise.
+    """
+    return file_name.lower().endswith(VIDEO_EXTENSIONS)
+
 def parse_args() -> Namespace:
     parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.',
                             formatter_class=ArgumentDefaultsHelpFormatter)
