@@ -72,6 +72,18 @@ def format_time(duration_in_seconds: float) -> str:
     seconds = int(duration - hours * 60 * 60 - minutes * 60)
     return '{:0>2d}:{:0>2d}:{:0>2d}'.format(hours, minutes, seconds)
 
+def format_bit_rate(bits_per_second: int) -> str:
+    """
+    Formats a bit rate in bits per second to make it human-readable.
+
+    Parameters:
+    bits_per_second (int): The bit rate in bits per second.
+
+    Returns:
+    str: A human-readable representation of the bit rate.
+    """
+    return '{} kb/s'.format(int(round(bits_per_second / 1000.0, 0)))
+
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
                               skip_seconds: float, verbose: bool) -> None:
     """
