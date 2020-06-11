@@ -34,6 +34,7 @@ DEFAULT_COLUMNS = 4
 DEFAULT_ROWS = 3
 DEFAULT_SPACING = 2
 DEFAULT_SKIP_SECONDS = 10.0
+DEFAULT_JPEG_QUALITY = 95
 
 PIL_COLOR_BLACK = ImageColor.getrgb('black')
 PIL_COLOR_WHITE = ImageColor.getrgb('white')
@@ -88,7 +89,7 @@ def format_bit_rate(bits_per_second: int) -> str:
     return '{} kb/s'.format(int(round(bits_per_second / 1000.0, 0)))
 
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
-                              skip_seconds: float, verbose: bool) -> None:
+                              skip_seconds: float, jpeg_quality: int, verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
 
@@ -99,6 +100,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     rows (int): The number of thumbnail rows.
     spacing (int): The spacing in pixels between and around the preview thumbnails.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
+    jpeg_quality (int): The quality of the JPEG image file that is created.
     verbose (bool): Print verbose information and messages.
     """
     print('Creating preview thumbnails for \'{}\' ...'.format(os.path.abspath(file_path)))
@@ -302,7 +304,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     image_path = '{}.jpg'.format(file_path)
     if verbose:
         print('Saving preview thumbnails image to \'{}\''.format(image_path))
-    thumbnails_image.save(image_path)
+    thumbnails_image.save(image_path, quality=jpeg_quality)
 
     # Close the video clip
     video_clip.close()
@@ -324,7 +326,7 @@ def has_video_extension(file_name: str) -> bool:
     return file_name.lower().endswith(VIDEO_EXTENSIONS)
 
 def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
-                              skip_seconds: float, verbose: bool) -> None:
+                              skip_seconds: float, jpeg_quality: int, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -339,6 +341,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     rows (int): The number of thumbnail rows.
     spacing (int): The spacing in pixels between and around the preview thumbnails.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
+    jpeg_quality (int): The quality of the JPEG image files that are created.
     verbose (bool): Print verbose information and messages.
     """
     # List of files and directories to process
@@ -367,7 +370,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
             try:
-                create_preview_thumbnails(file_path, width, columns, rows, spacing, skip_seconds, verbose)
+                create_preview_thumbnails(file_path, width, columns, rows, spacing, skip_seconds, jpeg_quality, verbose)
             except Exception as e:
                 print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
@@ -399,6 +402,11 @@ def parse_args() -> Namespace:
                          type=float,
                          default=DEFAULT_SKIP_SECONDS,
                          help='The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.')
+    parser.add_argument('--jpeg-quality',
+                         nargs=1,
+                         type=int,
+                         default=DEFAULT_JPEG_QUALITY,
+                         help='The quality of the JPEG image files that are created.')
     parser.add_argument('--recursive',
                          action='store_true',
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
@@ -416,4 +424,5 @@ def parse_args() -> Namespace:
 
 if __name__ == '__main__':
     args = parse_args()
-    process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing, args.skip_seconds, args.verbose)
+    process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
+                              args.skip_seconds, args.jpeg_quality, args.verbose)
