@@ -284,17 +284,41 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     y += text_line_spacing
     thumbnails_draw.text((x, y), audio_info, PIL_COLOR_BLACK, font=header_font)
 
+    # Font for timestamp texts
+    timestamp_font = ImageFont.load_default()
+    x_spacing_timestamp = 2
+    y_spacing_timestamp = 2
+    timestamp_shadow_offset = 1
+
     # Video time at which to capture the next preview
     time = skip_seconds
     thumbnail_count = 0
+
+    # Iterate over rows and columns creating and placing the preview thumbnails
     for row_index in range(rows):
         y = header_height + row_index * thumbnail_height + (row_index + 1) * y_spacing
         for column_index in range(columns):
             x = column_index * thumbnail_width + (column_index + 1) * x_spacing
+            # Capture, resize and position a preview thumbnail
             frame = video_clip.get_frame(time)
             image = Image.fromarray(frame)
             image.thumbnail((thumbnail_width, thumbnail_height))
             thumbnails_image.paste(image, box=(x, y))
+
+            # Add a human-readable timestamp to the preview thumbnail
+            formatted_time = format_time(time)
+            timestamp_size = timestamp_font.getsize(formatted_time)
+            timestamp_width = timestamp_size[0]
+            timestamp_height = timestamp_size[1]
+            x_timestamp = x + thumbnail_width - timestamp_width - x_spacing_timestamp
+            y_timestamp = y + thumbnail_height - timestamp_height - y_spacing_timestamp - timestamp_shadow_offset
+            timestamp_position = (x_timestamp, y_timestamp)
+            shadow_position = (x_timestamp + timestamp_shadow_offset, y_timestamp + timestamp_shadow_offset)
+            # Black timestamp 'shadow'
+            thumbnails_draw.text(shadow_position, formatted_time, PIL_COLOR_BLACK, font=timestamp_font)
+            # White timestamp text
+            thumbnails_draw.text(timestamp_position, formatted_time, PIL_COLOR_WHITE, font=timestamp_font)
+
             thumbnail_count += 1
             if verbose:
                 print('Captured preview thumbnail #{} of frame at {:.3f} s'.format(thumbnail_count, time))
