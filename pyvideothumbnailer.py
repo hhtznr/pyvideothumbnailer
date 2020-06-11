@@ -7,6 +7,9 @@ from argparse import Namespace
 # Library for accessing metadata and other media information (https://github.com/sbraz/pymediainfo)
 from pymediainfo import MediaInfo
 
+# Library for video editing (https://github.com/Zulko/moviepy)
+from moviepy.editor import VideoFileClip
+
 import os
 import sys
 
@@ -29,6 +32,22 @@ def create_preview_thumbnails(file_path: str, verbose: bool) -> None:
     verbose (bool): Print verbose information and messages.
     """
     print('Creating preview thumbnails for \'{}\' ...'.format(os.path.abspath(file_path)))
+
+    # Open the video file. Raises an IOError if the file is not a video.
+    video_clip = VideoFileClip(file_path)
+
+    # Width in px
+    video_width = video_clip.w
+    # Height in px
+    video_height = video_clip.h
+    # Aspect ratio
+    video_aspect = float(video_width) / float(video_height)
+    # Number of frames
+    number_frames = video_clip.reader.nframes
+    # Frames per second
+    fps = video_clip.fps
+    # Duration in seconds
+    duration = video_clip.duration
 
     # Parse the metadata from the video file
     # Dictionaries with general metadata, video metadata and audio metadata
