@@ -12,6 +12,7 @@ from moviepy.editor import VideoFileClip
 
 # Python imaging library (https://python-pillow.org/)
 from PIL import Image
+from PIL import ImageColor
 
 import os
 import sys
@@ -29,9 +30,13 @@ VIDEO_EXTENSIONS = ('.avi',
 DEFAULT_WIDTH = 800
 DEFAULT_COLUMNS = 4
 DEFAULT_ROWS = 3
+DEFAULT_SPACING = 2
 DEFAULT_SKIP_SECONDS = 10.0
 
-def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, skip_seconds: float, verbose: bool) -> None:
+PIL_COLOR_WHITE = ImageColor.getrgb('white')
+
+def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
+                              skip_seconds: float, verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
 
@@ -40,6 +45,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     width (int): The width in pixels of the created preview thumbnails image.
     columns (int): The number of thumbnail columns.
     rows (int): The number of thumbnail rows.
+    spacing (int): The spacing in pixels between and around the preview thumbnails.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     verbose (bool): Print verbose information and messages.
     """
@@ -95,27 +101,31 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
                 print('{}: {}'.format(key, value))
             print()
 
+    # Vertical (x) and horizontal (y) spacing between and around the preview thumbnails
+    x_spacing = spacing
+    y_spacing = spacing
+
     # Width and height of the individual preview thumbnails
-    thumbnail_width = float(width) / float(columns)
+    thumbnail_width = float(width - x_spacing * (columns + 1)) / float(columns)
     thumbnail_height = int(thumbnail_width / video_aspect)
     thumbnail_width = int(thumbnail_width)
     # Recompute image width, because actual width of the preview thumbnails may be a few pixels less due to scaling and rounding to integer pixels
-    image_width = thumbnail_width * columns
-    image_height = thumbnail_height * rows
+    image_width = thumbnail_width * columns + x_spacing * (columns + 1)
+    image_height = thumbnail_height * rows + y_spacing * (rows + 1)
 
     if verbose:
         print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, columns, rows, thumbnail_width, thumbnail_height))
 
     # PIL image for the preview thumbnails
-    thumbnails_image = Image.new('RGB', (image_width, image_height))
+    thumbnails_image = Image.new('RGB', (image_width, image_height), color=PIL_COLOR_WHITE)
 
     # Video time at which to capture the next preview
     time = skip_seconds
     thumbnail_count = 0
     for row_index in range(rows):
-        y = row_index * thumbnail_height
+        y = row_index * thumbnail_height + (row_index + 1) * y_spacing
         for column_index in range(columns):
-            x = column_index * thumbnail_width
+            x = column_index * thumbnail_width + (column_index + 1) * x_spacing
             frame = video_clip.get_frame(time)
             image = Image.fromarray(frame)
             image.thumbnail((thumbnail_width, thumbnail_height))
@@ -150,7 +160,8 @@ def has_video_extension(file_name: str) -> bool:
     """
     return file_name.lower().endswith(VIDEO_EXTENSIONS)
 
-def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, skip_seconds: float, verbose: bool) -> None:
+def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
+                              skip_seconds: float, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -163,6 +174,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     width (int): The width in pixels of the created preview thumbnails image.
     columns (int): The number of thumbnail columns.
     rows (int): The number of thumbnail rows.
+    spacing (int): The spacing in pixels between and around the preview thumbnails.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     verbose (bool): Print verbose information and messages.
     """
@@ -192,7 +204,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
             try:
-                create_preview_thumbnails(file_path, width, columns, rows, skip_seconds, verbose)
+                create_preview_thumbnails(file_path, width, columns, rows, spacing, skip_seconds, verbose)
             except Exception as e:
                 print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
@@ -214,6 +226,11 @@ def parse_args() -> Namespace:
                          type=int,
                          default=DEFAULT_ROWS,
                          help='The number of preview thumbnail rows.')
+    parser.add_argument('--spacing',
+                         nargs=1,
+                         type=int,
+                         default=DEFAULT_SPACING,
+                         help='The spacing between and around the preview thumbnails in px.')
     parser.add_argument('--skip-seconds',
                          nargs=1,
                          type=float,
@@ -236,4 +253,4 @@ def parse_args() -> Namespace:
 
 if __name__ == '__main__':
     args = parse_args()
-    process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.skip_seconds, args.verbose)
+    process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing, args.skip_seconds, args.verbose)
