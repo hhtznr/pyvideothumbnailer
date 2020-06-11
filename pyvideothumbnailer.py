@@ -127,7 +127,7 @@ def process_file_or_directory(path: str, recursive: bool, verbose: bool) -> None
             try:
                 create_preview_thumbnails(file_path, verbose)
             except Exception as e:
-                print('An exception occurred: {}.\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
+                print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
 def parse_args() -> Namespace:
     parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.',
