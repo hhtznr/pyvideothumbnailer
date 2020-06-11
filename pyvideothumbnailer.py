@@ -52,6 +52,26 @@ def format_size(size: int, suffix: str = 'B') -> str:
         size /= 1024.0
     return '{:.2f} {}{}'.format(size, 'Yi', suffix)
 
+def format_time(duration_in_seconds: float) -> str:
+    """
+    Formats a duration in seconds to make it human-readable.
+
+    Parameters:
+    duration_in_seconds (float): The duration in seconds.
+
+    Returns:
+    str: A human-readable representation of the duration.
+    """
+    # Cast duration to full seconds
+    duration = int(duration_in_seconds)
+    # Determine full hours
+    hours = int(duration / 3600)
+    # Determine full minutes of started hour
+    minutes = int((duration - hours * 60) / 60)
+    # Determine full seconds of started minute
+    seconds = int(duration - hours * 60 * 60 - minutes * 60)
+    return '{:0>2d}:{:0>2d}:{:0>2d}'.format(hours, minutes, seconds)
+
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
                               skip_seconds: float, verbose: bool) -> None:
     """
