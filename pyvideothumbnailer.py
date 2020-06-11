@@ -13,6 +13,8 @@ from moviepy.editor import VideoFileClip
 # Python imaging library (https://python-pillow.org/)
 from PIL import Image
 from PIL import ImageColor
+from PIL import ImageDraw
+from PIL import ImageFont
 
 import os
 import sys
@@ -33,6 +35,7 @@ DEFAULT_ROWS = 3
 DEFAULT_SPACING = 2
 DEFAULT_SKIP_SECONDS = 10.0
 
+PIL_COLOR_BLACK = ImageColor.getrgb('black')
 PIL_COLOR_WHITE = ImageColor.getrgb('white')
 
 def format_size(size: int, suffix: str = 'B') -> str:
@@ -150,9 +153,104 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
                 print('{}: {}'.format(key, value))
             print()
 
+    # Header for the preview thumbnails image providing file and metadata information
+    # File information
+    file_info = 'File: {}'.format(os.path.basename(file_path))
+
+    file_size = int(general_metadata['file_size'])
+    size_info = None
+    if file_size > 1024.0:
+        size_info = 'Size: {} B ({}), Duration: {}'.format(file_size, format_size(file_size), format_time(duration))
+    else:
+        size_info = 'Size: {} B, Duration: {}'.format(file_size, format_time(duration))
+
+    # Video metadata information
+    if video_metadata is None:
+        return
+
+    video_metadata['resolution'] = '{}x{}'.format(video_width, video_height)
+
+    video_info = None
+    for key in [ 'format', 'resolution', 'other_display_aspect_ratio', 'frame_rate', 'bit_rate' ]:
+        try:
+            value = video_metadata[key]
+            if key == 'other_display_aspect_ratio':
+                value = '({})'.format(value[0])
+            elif key == 'frame_rate':
+                value = '{:.2f} fps'.format(round(float(value), 2))
+            elif key == 'bit_rate':
+                value = format_bit_rate(value)
+
+            if video_info is None:
+                video_info = value
+            elif key == 'other_display_aspect_ratio':
+                video_info += ' {}'.format(value)
+            else:
+                video_info += ', {}'.format(value)
+        except KeyError as e:
+            if verbose:
+                print('Missing video metadata: {}'.format(e), file=sys.stderr)
+
+    audio_info = None
+    if audio_metadata is not None:
+        for key in [ 'format', 'sampling_rate', 'channel_s', 'bit_rate']:
+            try:
+                value = audio_metadata[key]
+                if key == 'sampling_rate':
+                    value = '{} Hz'.format(value)
+                elif key == 'channel_s':
+                    if value == 1:
+                        value = 'mono'
+                    elif value == 2:
+                        value = 'stereo'
+                    else:
+                        value = '{} channels'.format(value)
+                elif key == 'bit_rate':
+                    value = format_bit_rate(value)
+
+                if audio_info is None:
+                    audio_info = value
+                else:
+                    audio_info += ', {}'.format(value)
+            except KeyError as e:
+                if verbose:
+                    print('Missing audio metadata: {}'.format(e), file=sys.stderr)
+    else:
+        audio_info = 'None'
+
+    video_info = 'Video: {}'.format(video_info)
+    audio_info = 'Audio: {}'.format(audio_info)
+
+    if verbose:
+        print(file_info)
+        print(size_info)
+        print(video_info)
+        print(audio_info)
+
     # Vertical (x) and horizontal (y) spacing between and around the preview thumbnails
     x_spacing = spacing
     y_spacing = spacing
+
+    # Spacing between the header text lines
+    text_line_spacing = 2
+    # Font for the header texts
+    header_font = ImageFont.load_default()
+
+    # Height of the header texts
+    text_height_file_info = header_font.getsize(file_info)[1]
+    text_height_size_info = header_font.getsize(size_info)[1]
+    text_height_video_info = header_font.getsize(video_info)[1]
+    text_height_audio_info = header_font.getsize(audio_info)[1]
+
+    # Compute the height of the header
+    header_height = y_spacing
+    header_height += text_height_file_info
+    header_height += text_line_spacing
+    header_height += text_height_size_info
+    header_height += text_line_spacing
+    header_height += text_height_video_info
+    header_height += text_line_spacing
+    header_height += text_height_audio_info
 
     # Width and height of the individual preview thumbnails
     thumbnail_width = float(width - x_spacing * (columns + 1)) / float(columns)
@@ -160,19 +258,35 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     thumbnail_width = int(thumbnail_width)
     # Recompute image width, because actual width of the preview thumbnails may be a few pixels less due to scaling and rounding to integer pixels
     image_width = thumbnail_width * columns + x_spacing * (columns + 1)
-    image_height = thumbnail_height * rows + y_spacing * (rows + 1)
+    image_height = header_height + thumbnail_height * rows + y_spacing * (rows + 1)
 
     if verbose:
         print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, columns, rows, thumbnail_width, thumbnail_height))
 
     # PIL image for the preview thumbnails
     thumbnails_image = Image.new('RGB', (image_width, image_height), color=PIL_COLOR_WHITE)
+    # PIL draw for adding text to the image
+    thumbnails_draw = ImageDraw.Draw(thumbnails_image)
+
+    # Drawing the header text
+    x = x_spacing
+    y = y_spacing
+    thumbnails_draw.text((x, y), file_info, PIL_COLOR_BLACK, font=header_font)
+    y += text_height_file_info
+    y += text_line_spacing
+    thumbnails_draw.text((x, y), size_info, PIL_COLOR_BLACK, font=header_font)
+    y += text_height_size_info
+    y += text_line_spacing
+    thumbnails_draw.text((x, y), video_info, PIL_COLOR_BLACK, font=header_font)
+    y += text_height_video_info
+    y += text_line_spacing
+    thumbnails_draw.text((x, y), audio_info, PIL_COLOR_BLACK, font=header_font)
 
     # Video time at which to capture the next preview
     time = skip_seconds
     thumbnail_count = 0
     for row_index in range(rows):
-        y = row_index * thumbnail_height + (row_index + 1) * y_spacing
+        y = header_height + row_index * thumbnail_height + (row_index + 1) * y_spacing
         for column_index in range(columns):
             x = column_index * thumbnail_width + (column_index + 1) * x_spacing
             frame = video_clip.get_frame(time)
