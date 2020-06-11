@@ -40,6 +40,7 @@ DEFAULT_TIMESTAMP_FONT_SIZE = 12
 DEFAULT_SKIP_SECONDS = 10.0
 DEFAULT_SUFFIX = None
 DEFAULT_JPEG_QUALITY = 95
+DEFAULT_OUTPUT_DIRECTORY = None
 
 PIL_COLOR_BLACK = ImageColor.getrgb('black')
 PIL_COLOR_WHITE = ImageColor.getrgb('white')
@@ -95,7 +96,8 @@ def format_bit_rate(bits_per_second: int) -> str:
 
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, verbose: bool) -> None:
+                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
+                              verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
 
@@ -115,12 +117,19 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
     jpeg_quality (int): The quality of the JPEG image file that is created.
     override_existing (bool): If True, override image files that exist by the same name as the created image files.
+    output_directory_path (str): A directory, where all created preview thumbnails images should be saved.
+                                 If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
     verbose (bool): Print verbose information and messages.
     """
     # The path, where the created preview thumbnails image file should be saved.
     if suffix is None:
         suffix = ''
-    image_path = '{}{}.jpg'.format(file_path, suffix)
+    image_path = None
+    if output_directory_path is None:
+        image_path = '{}{}.jpg'.format(file_path, suffix)
+    else:
+        image_path = os.path.join(output_directory_path, '{}{}.jpg'.format(os.path.basename(file_path), suffix))
+
     if os.path.exists(image_path):
         if not override_existing:
             print('The path, where the preview image should be saved already exists, but shall not be overridden. Canceling creation of \'{}\'.'.format(os.path.abspath(image_path)), file=sys.stderr)
@@ -386,7 +395,7 @@ def has_video_extension(file_name: str) -> bool:
 
 def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool,
+                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
                               raise_errors: bool, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
@@ -411,6 +420,8 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
     jpeg_quality (int): The quality of the JPEG image files that are created.
     override_existing (bool): If True, override image files that exist by the same name as the created image files.
+    output_directory_path (str): A directory, where all created preview thumbnails images should be saved.
+                                 If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
     raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
     verbose (bool): Print verbose information and messages.
     """
@@ -442,7 +453,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
             try:
                 create_preview_thumbnails(file_path, width, columns, rows, spacing,
                                           header_font_name, header_font_size, timestamp_font_name, timestamp_font_size,
-                                          skip_seconds, suffix, jpeg_quality, override_existing, verbose)
+                                          skip_seconds, suffix, jpeg_quality, override_existing, output_directory_path, verbose)
             except Exception as e:
                 if raise_errors:
                     raise e
@@ -505,6 +516,11 @@ def parse_args() -> Namespace:
     parser.add_argument('--recursive',
                          action='store_true',
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
+    parser.add_argument('--output-directory',
+                         type=str,
+                         default=DEFAULT_OUTPUT_DIRECTORY,
+                         help="""A directory, where all created preview thumbnails images should be saved.
+                         If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.""")
     parser.add_argument('--raise-errors',
                          action='store_true',
                          help="""Stop if an error occurs by raising it. By default, errors are ignored and the affected preview thumbnails image is skipped.
@@ -522,8 +538,25 @@ def parse_args() -> Namespace:
     return parser.parse_args()
 
 if __name__ == '__main__':
+    # Parse the arguments
     args = parse_args()
+
+    # Take care of optional output directory
+    if args.output_directory is not None:
+        # If the directory does not yet exist, create it recursively
+        if not os.path.exists(args.output_directory):
+            try:
+                os.makedirs(args.output_directory)
+            except Exception as e:
+                print('Unable to create output directory \'{}\': {}'.format(os.path.abspath(args.output_directory), e), file=sys.stderr)
+                sys.exit(1)
+        # Exit if the path of the directory already exists, but is not a directory
+        elif not os.path.isdir(args.output_directory):
+            print('Path of the output directory already exists and is not a directory: \'{}\''.format(os.path.abspath(args.output_directory)), file=sys.stderr)
+            sys.exit(1)
+
+    # Process preview thumbnails image creation
     process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
                               args.header_font, args.header_font_size, args.timestamp_font, args.timestamp_font_size,
-                              args.skip_seconds, args.suffix, args.jpeg_quality, args.override_existing,
+                              args.skip_seconds, args.suffix, args.jpeg_quality, args.override_existing, args.output_directory,
                               args.raise_errors, args.verbose)
