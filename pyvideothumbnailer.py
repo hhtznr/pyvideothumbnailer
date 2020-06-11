@@ -4,6 +4,9 @@ from argparse import ArgumentDefaultsHelpFormatter
 from argparse import ArgumentParser
 from argparse import Namespace
 
+# Library for accessing metadata and other media information (https://github.com/sbraz/pymediainfo)
+from pymediainfo import MediaInfo
+
 import os
 import sys
 
@@ -17,14 +20,38 @@ VIDEO_EXTENSIONS = ('.avi',
                     '.mpg',
                     '.wmv')
 
-def create_preview_thumbnails(file_path: str) -> None:
+def create_preview_thumbnails(file_path: str, verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
 
     Parameters:
     file_path (str): The path of the video file of which to create thumbnails.
+    verbose (bool): Print verbose information and messages.
     """
     print('Creating preview thumbnails for \'{}\' ...'.format(os.path.abspath(file_path)))
+
+    # Parse the metadata from the video file
+    # Dictionaries with general metadata, video metadata and audio metadata
+    general_metadata = None
+    video_metadata = None
+    audio_metadata = None
+    for track in MediaInfo.parse(file_path).tracks:
+        # Dictionary with the track metadata
+        metadata = track.to_data()
+
+        if track.track_type == 'General' and general_metadata is None:
+            general_metadata = metadata
+        elif track.track_type == 'Video' and video_metadata is None:
+            video_metadata = metadata
+        elif track.track_type == 'Audio' and audio_metadata is None:
+            audio_metadata = metadata
+        else:
+            continue
+
+        if verbose:
+            for key, value in metadata.items():
+                print('{}: {}'.format(key, value))
+            print()
 
 def has_video_extension(file_name: str) -> bool:
     """
@@ -41,7 +68,7 @@ def has_video_extension(file_name: str) -> bool:
     """
     return file_name.lower().endswith(VIDEO_EXTENSIONS)
 
-def process_file_or_directory(path: str, recursive: bool) -> None:
+def process_file_or_directory(path: str, recursive: bool, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -51,6 +78,7 @@ def process_file_or_directory(path: str, recursive: bool) -> None:
     Parameters:
     path (str): The absolute or relative path of the file or directory.
     recursive (bool): If path is a directory and True, process any subdirectories as well.
+    verbose (bool): Print verbose information and messages.
     """
     # List of files and directories to process
     file_names = None
@@ -78,7 +106,7 @@ def process_file_or_directory(path: str, recursive: bool) -> None:
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
             try:
-                create_preview_thumbnails(file_path)
+                create_preview_thumbnails(file_path, verbose)
             except Exception as e:
                 print('An exception occurred: {}.\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
@@ -88,6 +116,9 @@ def parse_args() -> Namespace:
     parser.add_argument('--recursive',
                          action='store_true',
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
+    parser.add_argument('--verbose',
+                         action='store_true',
+                         help='Print verbose information and messages.')
     parser.add_argument('filename',
                          nargs='?',
                          type=str,
@@ -99,4 +130,4 @@ def parse_args() -> Namespace:
 
 if __name__ == '__main__':
     args = parse_args()
-    process_file_or_directory(args.filename, args.recursive)
+    process_file_or_directory(args.filename, args.recursive, args.verbose)
