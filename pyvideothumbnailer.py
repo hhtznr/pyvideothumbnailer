@@ -38,6 +38,7 @@ DEFAULT_HEADER_FONT_SIZE = 14
 DEFAULT_TIMESTAMP_FONT_NAME = None
 DEFAULT_TIMESTAMP_FONT_SIZE = 12
 DEFAULT_SKIP_SECONDS = 10.0
+DEFAULT_SUFFIX = None
 DEFAULT_JPEG_QUALITY = 95
 
 PIL_COLOR_BLACK = ImageColor.getrgb('black')
@@ -94,7 +95,7 @@ def format_bit_rate(bits_per_second: int) -> str:
 
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, jpeg_quality: int, verbose: bool) -> None:
+                              skip_seconds: float, suffix: str, jpeg_quality: int, verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
 
@@ -111,6 +112,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
                                If omitted, a built-in default font is used.
     timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
+    suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
     jpeg_quality (int): The quality of the JPEG image file that is created.
     verbose (bool): Print verbose information and messages.
     """
@@ -344,7 +346,9 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
             time += time_step
 
     # Save the preview thumbnails image
-    image_path = '{}.jpg'.format(file_path)
+    if suffix is None:
+        suffix = ''
+    image_path = '{}{}.jpg'.format(file_path, suffix)
     if verbose:
         print('Saving preview thumbnails image to \'{}\''.format(image_path))
     thumbnails_image.save(image_path, quality=jpeg_quality)
@@ -370,7 +374,7 @@ def has_video_extension(file_name: str) -> bool:
 
 def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, jpeg_quality: int, raise_errors: bool, verbose: bool) -> None:
+                              skip_seconds: float, suffix: str, jpeg_quality: int, raise_errors: bool, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -391,6 +395,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
                                If omitted, a built-in default font is used.
     timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
+    suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
     jpeg_quality (int): The quality of the JPEG image files that are created.
     raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
     verbose (bool): Print verbose information and messages.
@@ -423,7 +428,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
             try:
                 create_preview_thumbnails(file_path, width, columns, rows, spacing,
                                           header_font_name, header_font_size, timestamp_font_name, timestamp_font_size,
-                                          skip_seconds, jpeg_quality, verbose)
+                                          skip_seconds, suffix, jpeg_quality, verbose)
             except Exception as e:
                 if raise_errors:
                     raise e
@@ -471,6 +476,10 @@ def parse_args() -> Namespace:
                          type=float,
                          default=DEFAULT_SKIP_SECONDS,
                          help='The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.')
+    parser.add_argument('--suffix',
+                         type=str,
+                         default=DEFAULT_SUFFIX,
+                         help='An optional suffix to append to the file name of the generated preview thumbnails images.')
     parser.add_argument('--jpeg-quality',
                          type=int,
                          default=DEFAULT_JPEG_QUALITY,
@@ -498,4 +507,4 @@ if __name__ == '__main__':
     args = parse_args()
     process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
                               args.header_font, args.header_font_size, args.timestamp_font, args.timestamp_font_size,
-                              args.skip_seconds, args.jpeg_quality, args.raise_errors, args.verbose)
+                              args.skip_seconds, args.suffix, args.jpeg_quality, args.raise_errors, args.verbose)
