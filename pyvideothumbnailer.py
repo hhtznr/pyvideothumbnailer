@@ -482,7 +482,7 @@ def parse_args() -> Namespace:
     parser.add_argument('--header-font',
                          type=str,
                          default=DEFAULT_HEADER_FONT_NAME,
-                         help=""""The name of a true type font to use for the header text providing information on the video file and its metadata.
+                         help="""The name of a true type font to use for the header text providing information on the video file and its metadata.
                          If omitted, a built-in default font is used.""")
     parser.add_argument('--header-font-size',
                          type=int,
@@ -491,7 +491,7 @@ def parse_args() -> Namespace:
     parser.add_argument('--timestamp-font',
                          type=str,
                          default=DEFAULT_TIMESTAMP_FONT_NAME,
-                         help=""""The name of a true type font to use for the preview thumbnail timestamps.
+                         help="""The name of a true type font to use for the preview thumbnail timestamps.
                          If omitted, a built-in default font is used.""")
     parser.add_argument('--timestamp-font-size',
                          type=int,
