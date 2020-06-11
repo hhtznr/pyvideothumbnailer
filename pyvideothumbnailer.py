@@ -95,7 +95,7 @@ def format_bit_rate(bits_per_second: int) -> str:
 
 def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, suffix: str, jpeg_quality: int, verbose: bool) -> None:
+                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, verbose: bool) -> None:
     """
     Create preview thumbnails of a video file.
 
@@ -114,8 +114,23 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
     jpeg_quality (int): The quality of the JPEG image file that is created.
+    override_existing (bool): If True, override image files that exist by the same name as the created image files.
     verbose (bool): Print verbose information and messages.
     """
+    # The path, where the created preview thumbnails image file should be saved.
+    if suffix is None:
+        suffix = ''
+    image_path = '{}{}.jpg'.format(file_path, suffix)
+    if os.path.exists(image_path):
+        if not override_existing:
+            print('The path, where the preview image should be saved already exists, but shall not be overridden. Canceling creation of \'{}\'.'.format(os.path.abspath(image_path)), file=sys.stderr)
+            return
+        elif not os.path.isfile(image_path):
+            print('The path, where the preview image should be saved already exists, but is not a file. Canceling creation of \'{}\'.'.format(os.path.abspath(image_path)), file=sys.stderr)
+            return
+        else:
+            print('The file \'{}\' already exists and will be overridden as requested.'.format(os.path.abspath(image_path)))
+
     print('Creating preview thumbnails for \'{}\' ...'.format(os.path.abspath(file_path)))
 
     # Open the video file. Raises an IOError if the file is not a video.
@@ -346,9 +361,6 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
             time += time_step
 
     # Save the preview thumbnails image
-    if suffix is None:
-        suffix = ''
-    image_path = '{}{}.jpg'.format(file_path, suffix)
     if verbose:
         print('Saving preview thumbnails image to \'{}\''.format(image_path))
     thumbnails_image.save(image_path, quality=jpeg_quality)
@@ -374,7 +386,8 @@ def has_video_extension(file_name: str) -> bool:
 
 def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
                               header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, suffix: str, jpeg_quality: int, raise_errors: bool, verbose: bool) -> None:
+                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool,
+                              raise_errors: bool, verbose: bool) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -397,6 +410,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
     suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
     jpeg_quality (int): The quality of the JPEG image files that are created.
+    override_existing (bool): If True, override image files that exist by the same name as the created image files.
     raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
     verbose (bool): Print verbose information and messages.
     """
@@ -428,7 +442,7 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
             try:
                 create_preview_thumbnails(file_path, width, columns, rows, spacing,
                                           header_font_name, header_font_size, timestamp_font_name, timestamp_font_size,
-                                          skip_seconds, suffix, jpeg_quality, verbose)
+                                          skip_seconds, suffix, jpeg_quality, override_existing, verbose)
             except Exception as e:
                 if raise_errors:
                     raise e
@@ -484,6 +498,10 @@ def parse_args() -> Namespace:
                          type=int,
                          default=DEFAULT_JPEG_QUALITY,
                          help='The quality of the JPEG image files that are created.')
+    parser.add_argument('--override-existing',
+                         action='store_true',
+                         help="""Override any existing image files, which have the same name as the generated images.
+                         By default, a preview thumbnails image is not created, if the file to be created already exists.""")
     parser.add_argument('--recursive',
                          action='store_true',
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
@@ -507,4 +525,5 @@ if __name__ == '__main__':
     args = parse_args()
     process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
                               args.header_font, args.header_font_size, args.timestamp_font, args.timestamp_font_size,
-                              args.skip_seconds, args.suffix, args.jpeg_quality, args.raise_errors, args.verbose)
+                              args.skip_seconds, args.suffix, args.jpeg_quality, args.override_existing,
+                              args.raise_errors, args.verbose)
