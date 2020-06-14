@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
-from argparse import ArgumentDefaultsHelpFormatter
+from __future__ import annotations
+
 from argparse import ArgumentParser
 from argparse import Namespace
 
@@ -29,6 +30,8 @@ VIDEO_EXTENSIONS = ('.avi',
                     '.mpg',
                     '.wmv')
 
+DEFAULT_PATH = os.getcwd()
+DEFAULT_RECURSIVE = False
 DEFAULT_WIDTH = 800
 DEFAULT_COLUMNS = 4
 DEFAULT_ROWS = 3
@@ -40,10 +43,83 @@ DEFAULT_TIMESTAMP_FONT_SIZE = 12
 DEFAULT_SKIP_SECONDS = 10.0
 DEFAULT_SUFFIX = None
 DEFAULT_JPEG_QUALITY = 95
+DEFAULT_OVERRIDE_EXISTING = False
 DEFAULT_OUTPUT_DIRECTORY = None
+DEFAULT_RAISE_ERRORS = False
+DEFAULT_VERBOSE = False
 
 PIL_COLOR_BLACK = ImageColor.getrgb('black')
 PIL_COLOR_WHITE = ImageColor.getrgb('white')
+
+class PyVideoThumbnailerParameters:
+
+    def __init__(self, path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
+                 header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
+                 skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
+                 raise_errors: bool, verbose: bool):
+        """
+        Constructor for an instance of the object holding all of the parameters of Python Video Thumbnailer.
+
+        Parameters:
+        path (str): The path of the video file of which to create a preview thumbnails image
+                    or the path of the directory, where video files are located of which to create preview images.
+        recursive (bool): If path is a directory and True, process any subdirectories as well.
+        width (int): The width in pixels of the created preview thumbnails image.
+        columns (int): The number of thumbnail columns.
+        rows (int): The number of thumbnail rows.
+        spacing (int): The spacing in pixels between and around the preview thumbnails.
+        header_font_name (str): The name of a true type font to use for the header text providing information on the video file and its metadata.
+                                If omitted, a built-in default font is used.
+        header_font_size (int): The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.
+        timestamp_font_name (str): The name of a true type font to use for the preview thumbnail timestamps.
+                                   If omitted, a built-in default font is used.
+        timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
+        skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
+        suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
+        jpeg_quality (int): The quality of the JPEG image file that is created.
+        override_existing (bool): If True, override image files that exist by the same name as the created image files.
+        output_directory_path (str): A directory, where all created preview thumbnails images should be saved.
+                                     If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
+        raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
+        verbose (bool): Print verbose information and messages.
+        """
+        self.path = path
+        self.recursive = recursive
+        self.width = width
+        self.columns = columns
+        self.rows = rows
+        self.spacing = spacing
+        self.header_font_name = header_font_name
+        self.header_font_size = header_font_size
+        self.timestamp_font_name = timestamp_font_name
+        self.timestamp_font_size = timestamp_font_size
+        self.skip_seconds = skip_seconds
+        self.suffix = suffix
+        self.jpeg_quality = jpeg_quality
+        self.override_existing = override_existing
+        self.output_directory_path = output_directory_path
+        self.raise_errors = raise_errors
+        self.verbose = verbose
+
+    @staticmethod
+    def from_defaults() -> PyVideoThumbnailerParameters.PyVideoThumbnailerParameters:
+        return PyVideoThumbnailerParameters(DEFAULT_PATH,
+                                            DEFAULT_RECURSIVE,
+                                            DEFAULT_WIDTH,
+                                            DEFAULT_COLUMNS,
+                                            DEFAULT_ROWS,
+                                            DEFAULT_SPACING,
+                                            DEFAULT_HEADER_FONT_NAME,
+                                            DEFAULT_HEADER_FONT_SIZE,
+                                            DEFAULT_TIMESTAMP_FONT_NAME,
+                                            DEFAULT_TIMESTAMP_FONT_SIZE,
+                                            DEFAULT_SKIP_SECONDS,
+                                            DEFAULT_SUFFIX,
+                                            DEFAULT_JPEG_QUALITY,
+                                            DEFAULT_OVERRIDE_EXISTING,
+                                            DEFAULT_OUTPUT_DIRECTORY,
+                                            DEFAULT_RAISE_ERRORS,
+                                            DEFAULT_VERBOSE)
 
 def format_size(size: int, suffix: str = 'B') -> str:
     """
@@ -94,44 +170,26 @@ def format_bit_rate(bits_per_second: int) -> str:
     """
     return '{} kb/s'.format(int(round(bits_per_second / 1000.0, 0)))
 
-def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: int, spacing: int,
-                              header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
-                              verbose: bool) -> None:
+def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: str) -> None:
     """
     Create preview thumbnails of a video file.
 
     Parameters:
+    params (PyVideoThumbnailerParameters): The parameters that control, which preview thumbnails images are created
+                                           and their properties.
     file_path (str): The path of the video file of which to create thumbnails.
-    width (int): The width in pixels of the created preview thumbnails image.
-    columns (int): The number of thumbnail columns.
-    rows (int): The number of thumbnail rows.
-    spacing (int): The spacing in pixels between and around the preview thumbnails.
-    header_font_name (str): The name of a true type font to use for the header text providing information on the video file and its metadata.
-                            If omitted, a built-in default font is used.
-    header_font_size (int): The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.
-    timestamp_font_name (str): The name of a true type font to use for the preview thumbnail timestamps.
-                               If omitted, a built-in default font is used.
-    timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
-    skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
-    suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
-    jpeg_quality (int): The quality of the JPEG image file that is created.
-    override_existing (bool): If True, override image files that exist by the same name as the created image files.
-    output_directory_path (str): A directory, where all created preview thumbnails images should be saved.
-                                 If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
-    verbose (bool): Print verbose information and messages.
     """
     # The path, where the created preview thumbnails image file should be saved.
-    if suffix is None:
+    if params.suffix is None:
         suffix = ''
     image_path = None
-    if output_directory_path is None:
+    if params.output_directory_path is None:
         image_path = '{}{}.jpg'.format(file_path, suffix)
     else:
-        image_path = os.path.join(output_directory_path, '{}{}.jpg'.format(os.path.basename(file_path), suffix))
+        image_path = os.path.join(params.output_directory_path, '{}{}.jpg'.format(os.path.basename(file_path), suffix))
 
     if os.path.exists(image_path):
-        if not override_existing:
+        if not params.override_existing:
             print('The path, where the preview image should be saved already exists, but shall not be overridden. Canceling creation of \'{}\'.'.format(os.path.abspath(image_path)), file=sys.stderr)
             return
         elif not os.path.isfile(image_path):
@@ -159,12 +217,12 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     duration = video_clip.duration
 
     # The number of thumbnail images to capture
-    number_thumbnails = rows * columns
-    if skip_seconds >= duration:
-        print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(skip_seconds, duration), file=sys.stderr)
+    number_thumbnails = params.rows * params.columns
+    if params.skip_seconds >= duration:
+        print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(params.skip_seconds, duration), file=sys.stderr)
         return
     # The time step for iterating over the clip and capturing thumbnails
-    time_step = (duration - skip_seconds) / number_thumbnails
+    time_step = (duration - params.skip_seconds) / number_thumbnails
     if time_step < 1.0 / fps:
         print('Video clip ({} frames) is too short to generate {} distinct preview thumbnails'.format(number_frames, number_thumbnails), file=sys.stderr)
         return
@@ -187,7 +245,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
         else:
             continue
 
-        if verbose:
+        if params.verbose:
             for key, value in metadata.items():
                 print('{}: {}'.format(key, value))
             print()
@@ -227,7 +285,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
             else:
                 video_info += ', {}'.format(value)
         except KeyError as e:
-            if verbose:
+            if params.verbose:
                 print('Missing video metadata: {}'.format(e), file=sys.stderr)
 
     audio_info = None
@@ -252,7 +310,7 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
                 else:
                     audio_info += ', {}'.format(value)
             except KeyError as e:
-                if verbose:
+                if params.verbose:
                     print('Missing audio metadata: {}'.format(e), file=sys.stderr)
     else:
         audio_info = 'None'
@@ -260,24 +318,24 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     video_info = 'Video: {}'.format(video_info)
     audio_info = 'Audio: {}'.format(audio_info)
 
-    if verbose:
+    if params.verbose:
         print(file_info)
         print(size_info)
         print(video_info)
         print(audio_info)
 
     # Vertical (x) and horizontal (y) spacing between and around the preview thumbnails
-    x_spacing = spacing
-    y_spacing = spacing
+    x_spacing = params.spacing
+    y_spacing = params.spacing
 
     # Spacing between the header text lines
     text_line_spacing = 2
     # Font for the header texts
     header_font = None
-    if header_font_name is None:
+    if params.header_font_name is None:
         header_font = ImageFont.load_default()
     else:
-        header_font = ImageFont.truetype(font=header_font_name, size=header_font_size)
+        header_font = ImageFont.truetype(font=params.header_font_name, size=params.header_font_size)
 
     # Height of the header texts
     text_height_file_info = header_font.getsize(file_info)[1]
@@ -296,15 +354,15 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
     header_height += text_height_audio_info
 
     # Width and height of the individual preview thumbnails
-    thumbnail_width = float(width - x_spacing * (columns + 1)) / float(columns)
+    thumbnail_width = float(params.width - x_spacing * (params.columns + 1)) / float(params.columns)
     thumbnail_height = int(thumbnail_width / video_aspect)
     thumbnail_width = int(thumbnail_width)
     # Recompute image width, because actual width of the preview thumbnails may be a few pixels less due to scaling and rounding to integer pixels
-    image_width = thumbnail_width * columns + x_spacing * (columns + 1)
-    image_height = header_height + thumbnail_height * rows + y_spacing * (rows + 1)
+    image_width = thumbnail_width * params.columns + x_spacing * (params.columns + 1)
+    image_height = header_height + thumbnail_height * params.rows + y_spacing * (params.rows + 1)
 
-    if verbose:
-        print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, columns, rows, thumbnail_width, thumbnail_height))
+    if params.verbose:
+        print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, params.columns, params.rows, thumbnail_width, thumbnail_height))
 
     # PIL image for the preview thumbnails
     thumbnails_image = Image.new('RGB', (image_width, image_height), color=PIL_COLOR_WHITE)
@@ -327,22 +385,22 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
 
     # Font for timestamp texts
     timestamp_font = None
-    if timestamp_font_name is None:
+    if params.timestamp_font_name is None:
         timestamp_font = ImageFont.load_default()
     else:
-        timestamp_font = ImageFont.truetype(font=timestamp_font_name, size=timestamp_font_size)
+        timestamp_font = ImageFont.truetype(font=params.timestamp_font_name, size=params.timestamp_font_size)
     x_spacing_timestamp = 2
     y_spacing_timestamp = 2
     timestamp_shadow_offset = 1
 
     # Video time at which to capture the next preview
-    time = skip_seconds
+    time = params.skip_seconds
     thumbnail_count = 0
 
     # Iterate over rows and columns creating and placing the preview thumbnails
-    for row_index in range(rows):
+    for row_index in range(params.rows):
         y = header_height + row_index * thumbnail_height + (row_index + 1) * y_spacing
-        for column_index in range(columns):
+        for column_index in range(params.columns):
             x = column_index * thumbnail_width + (column_index + 1) * x_spacing
             # Capture, resize and position a preview thumbnail
             frame = video_clip.get_frame(time)
@@ -365,14 +423,14 @@ def create_preview_thumbnails(file_path: str, width: int, columns: int, rows: in
             thumbnails_draw.text(timestamp_position, formatted_time, PIL_COLOR_WHITE, font=timestamp_font)
 
             thumbnail_count += 1
-            if verbose:
+            if params.verbose:
                 print('Captured preview thumbnail #{} of frame at {:.3f} s'.format(thumbnail_count, time))
             time += time_step
 
     # Save the preview thumbnails image
-    if verbose:
+    if params.verbose:
         print('Saving preview thumbnails image to \'{}\''.format(image_path))
-    thumbnails_image.save(image_path, quality=jpeg_quality)
+    thumbnails_image.save(image_path, quality=params.jpeg_quality)
 
     # Close the video clip
     video_clip.close()
@@ -393,10 +451,7 @@ def has_video_extension(file_name: str) -> bool:
     """
     return file_name.lower().endswith(VIDEO_EXTENSIONS)
 
-def process_file_or_directory(path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
-                              header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
-                              skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
-                              raise_errors: bool, verbose: bool) -> None:
+def process_file_or_directory(params: PyVideoThumbnailerParameters) -> None:
     """
     Process a file or directory and create preview thumbnails of identified video files.
 
@@ -404,110 +459,78 @@ def process_file_or_directory(path: str, recursive: bool, width: int, columns: i
     If called on a directory, preview thumbnails are created of video files found in the directory.
 
     Parameters:
-    path (str): The absolute or relative path of the file or directory.
-    recursive (bool): If path is a directory and True, process any subdirectories as well.
-    width (int): The width in pixels of the created preview thumbnails image.
-    columns (int): The number of thumbnail columns.
-    rows (int): The number of thumbnail rows.
-    spacing (int): The spacing in pixels between and around the preview thumbnails.
-    header_font_name (str): The name of a true type font to use for the header text providing information on the video file and its metadata.
-                            If omitted, a built-in default font is used.
-    header_font_size (int): The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.
-    timestamp_font_name (str): The name of a true type font to use for the preview thumbnail timestamps.
-                               If omitted, a built-in default font is used.
-    timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
-    skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
-    suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
-    jpeg_quality (int): The quality of the JPEG image files that are created.
-    override_existing (bool): If True, override image files that exist by the same name as the created image files.
-    output_directory_path (str): A directory, where all created preview thumbnails images should be saved.
-                                 If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
-    raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
-    verbose (bool): Print verbose information and messages.
+    params (PyVideoThumbnailerParameters): The parameters that control, which preview thumbnails images are created
+                                           and their properties.
     """
     # List of files and directories to process
     file_names = None
     # If the path is a directory, list its contents
-    if os.path.isdir(path):
-        file_names = sorted(os.listdir(path))
+    if os.path.isdir(params.path):
+        file_names = sorted(os.listdir(params.path))
     # If the path is a file, get its dirname and basename
-    elif os.path.isfile(path):
-        path_elements = os.path.split(path)
+    elif os.path.isfile(params.path):
+        path_elements = os.path.split(params.path)
         # dirname
-        path = path_elements[0]
+        params.path = path_elements[0]
         # basename (as sole element in a list to be compatible with iteration below)
         file_names = [path_elements[1]]
     else:
-        print('Path \'{}\' is neither a file nor a directory.'.format(os.path.abspath(path)))
+        print('Path \'{}\' is neither a file nor a directory.'.format(os.path.abspath(params.path)))
         return
 
     # If path is a directory, iterate over the contained files and directories.
     # If path is a file, just 'iterate' over this single file.
     for file_name in file_names:
-        file_path = os.path.join(path, file_name)
+        file_path = os.path.join(params.path, file_name)
         # If recursive, call the process method on any subdirectories
-        if recursive and os.path.isdir(file_path):
+        if params.recursive and os.path.isdir(file_path):
             process_file_or_directory(file_path, True)
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
             try:
-                create_preview_thumbnails(file_path, width, columns, rows, spacing,
-                                          header_font_name, header_font_size, timestamp_font_name, timestamp_font_size,
-                                          skip_seconds, suffix, jpeg_quality, override_existing, output_directory_path, verbose)
+                create_preview_thumbnails(params, file_path)
             except Exception as e:
-                if raise_errors:
+                if params.raise_errors:
                     raise e
                 else:
                     print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
 def parse_args() -> Namespace:
-    parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.',
-                            formatter_class=ArgumentDefaultsHelpFormatter)
+    parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.')
     parser.add_argument('--width',
                          type=int,
-                         default=DEFAULT_WIDTH,
                          help='The intended width of the preview thumbnails image in px. Actual width may be slightly less due rounding upon scaling.')
     parser.add_argument('--columns',
                          type=int,
-                         default=DEFAULT_COLUMNS,
                          help='The number of preview thumbnail columns.')
     parser.add_argument('--rows',
                          type=int,
-                         default=DEFAULT_ROWS,
                          help='The number of preview thumbnail rows.')
     parser.add_argument('--spacing',
                          type=int,
-                         default=DEFAULT_SPACING,
                          help='The spacing between and around the preview thumbnails in px.')
     parser.add_argument('--header-font',
                          type=str,
-                         default=DEFAULT_HEADER_FONT_NAME,
                          help="""The name of a true type font to use for the header text providing information on the video file and its metadata.
                          If omitted, a built-in default font is used.""")
     parser.add_argument('--header-font-size',
                          type=int,
-                         default=DEFAULT_HEADER_FONT_SIZE,
                          help='The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.')
     parser.add_argument('--timestamp-font',
                          type=str,
-                         default=DEFAULT_TIMESTAMP_FONT_NAME,
                          help="""The name of a true type font to use for the preview thumbnail timestamps.
                          If omitted, a built-in default font is used.""")
     parser.add_argument('--timestamp-font-size',
                          type=int,
-                         default=DEFAULT_TIMESTAMP_FONT_SIZE,
                          help='The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.')
     parser.add_argument('--skip-seconds',
                          type=float,
-                         default=DEFAULT_SKIP_SECONDS,
                          help='The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.')
     parser.add_argument('--suffix',
                          type=str,
-                         default=DEFAULT_SUFFIX,
                          help='An optional suffix to append to the file name of the generated preview thumbnails images.')
     parser.add_argument('--jpeg-quality',
                          type=int,
-                         default=DEFAULT_JPEG_QUALITY,
                          help='The quality of the JPEG image files that are created.')
     parser.add_argument('--override-existing',
                          action='store_true',
@@ -518,7 +541,6 @@ def parse_args() -> Namespace:
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
     parser.add_argument('--output-directory',
                          type=str,
-                         default=DEFAULT_OUTPUT_DIRECTORY,
                          help="""A directory, where all created preview thumbnails images should be saved.
                          If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.""")
     parser.add_argument('--raise-errors',
@@ -531,32 +553,79 @@ def parse_args() -> Namespace:
     parser.add_argument('filename',
                          nargs='?',
                          type=str,
-                         default=os.getcwd(),
                          help="""Video file of which to create preview thumbnails or directory, where multiple video files are located.
                          File name in the current working directory or path. If the argument is omitted, preview thumbnails are
                          generated for video files in the current working directory.""")
     return parser.parse_args()
 
-if __name__ == '__main__':
-    # Parse the arguments
+def get_parameters() -> PyVideoThumbnailerParameters:
+    """
+    Determines and returns the parameters to use for Python Video Thumbnailer.
+
+    Returns:
+    PyVideoThumbnailerParameters: The parameters that control, which preview thumbnails images are created
+                                  and their properties
+    """
+    # Parameters, initialized with default values
+    params = PyVideoThumbnailerParameters.from_defaults()
+
+    # Command line arguments
+    # Override default parameters for arguments provided by the user
     args = parse_args()
+    if args.filename is not None:
+        params.path = args.filename
+    if args.recursive is not False:
+        params.recursive = args.recursive
+    if args.width is not None:
+        params.width = args.width
+    if args.columns is not None:
+        params.columns = args.columns
+    if args.rows is not None:
+        params.rows = args.rows
+    if args.spacing is not None:
+        params.spacing = args.spacing
+    if args.header_font is not None:
+        params.header_font_name = args.header_font
+    if args.header_font_size is not None:
+        params.header_font_size = args.header_font_size
+    if args.timestamp_font is not None:
+        params.timestamp_font_name = args.timestamp_font
+    if args.header_font_size is not None:
+        params.timestamp_font_size = args.timestamp_font_size
+    if args.skip_seconds is not None:
+        params.skip_seconds = args.skip_seconds
+    if args.suffix is not None:
+        params.suffix = args.suffix
+    if args.jpeg_quality is not None:
+        params.jpeg_quality = args.jpeg_quality
+    if args.override_existing is not False:
+        params.override_existing = args.override_existing
+    if args.output_directory is not None:
+        params.output_directory_path = args.output_directory
+    if args.raise_errors is not False:
+        params.raise_errors = args.raise_errors
+    if args.verbose is not None:
+        params.verbose = args.verbose
+    print('Path: {}'.format(params.path))
+    return params
+
+if __name__ == '__main__':
+    # Get the parameters
+    params = get_parameters()
 
     # Take care of optional output directory
-    if args.output_directory is not None:
+    if params.output_directory_path is not None:
         # If the directory does not yet exist, create it recursively
-        if not os.path.exists(args.output_directory):
+        if not os.path.exists(params.output_directory_path):
             try:
-                os.makedirs(args.output_directory)
+                os.makedirs(params.output_directory_path)
             except Exception as e:
-                print('Unable to create output directory \'{}\': {}'.format(os.path.abspath(args.output_directory), e), file=sys.stderr)
+                print('Unable to create output directory \'{}\': {}'.format(os.path.abspath(params.output_directory_path), e), file=sys.stderr)
                 sys.exit(1)
         # Exit if the path of the directory already exists, but is not a directory
-        elif not os.path.isdir(args.output_directory):
-            print('Path of the output directory already exists and is not a directory: \'{}\''.format(os.path.abspath(args.output_directory)), file=sys.stderr)
+        elif not os.path.isdir(params.output_directory):
+            print('Path of the output directory already exists and is not a directory: \'{}\''.format(os.path.abspath(params.output_directory_path)), file=sys.stderr)
             sys.exit(1)
 
     # Process preview thumbnails image creation
-    process_file_or_directory(args.filename, args.recursive, args.width, args.columns, args.rows, args.spacing,
-                              args.header_font, args.header_font_size, args.timestamp_font, args.timestamp_font_size,
-                              args.skip_seconds, args.suffix, args.jpeg_quality, args.override_existing, args.output_directory,
-                              args.raise_errors, args.verbose)
+    process_file_or_directory(params)
