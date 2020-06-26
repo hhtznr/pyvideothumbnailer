@@ -5,6 +5,8 @@ from __future__ import annotations
 from argparse import ArgumentParser
 from argparse import Namespace
 
+from configparser import ConfigParser
+
 # Library for accessing metadata and other media information (https://github.com/sbraz/pymediainfo)
 from pymediainfo import MediaInfo
 
@@ -19,6 +21,8 @@ from PIL import ImageFont
 
 import os
 import sys
+
+CONFIG_FILE_NAME = '.pyvideothumbnailer.conf'
 
 VIDEO_EXTENSIONS = ('.avi',
                     '.divx',
@@ -47,6 +51,11 @@ DEFAULT_OVERRIDE_EXISTING = False
 DEFAULT_OUTPUT_DIRECTORY = None
 DEFAULT_RAISE_ERRORS = False
 DEFAULT_VERBOSE = False
+
+CONFIG_SECTION_LAYOUT = 'Layout'
+CONFIG_SECTION_VIDEO = 'Video'
+CONFIG_SECTION_FILE = 'File'
+CONFIG_SECTION_PROGRAM = 'Program'
 
 PIL_COLOR_BLACK = ImageColor.getrgb('black')
 PIL_COLOR_WHITE = ImageColor.getrgb('white')
@@ -181,12 +190,12 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     """
     # The path, where the created preview thumbnails image file should be saved.
     if params.suffix is None:
-        suffix = ''
+        params.suffix = ''
     image_path = None
     if params.output_directory_path is None:
-        image_path = '{}{}.jpg'.format(file_path, suffix)
+        image_path = '{}{}.jpg'.format(file_path, params.suffix)
     else:
-        image_path = os.path.join(params.output_directory_path, '{}{}.jpg'.format(os.path.basename(file_path), suffix))
+        image_path = os.path.join(params.output_directory_path, '{}{}.jpg'.format(os.path.basename(file_path), params.suffix))
 
     if os.path.exists(image_path):
         if not params.override_existing:
@@ -562,14 +571,68 @@ def get_parameters() -> PyVideoThumbnailerParameters:
     """
     Determines and returns the parameters to use for Python Video Thumbnailer.
 
+    The parameters are initialized as follows:
+    1. Built-in defaults
+    2. Parameters defined in the configuration file .pyvideothumbnailer.conf,
+       if found in the user's home directory
+    3. Parameters supplied as command line arguments
+
     Returns:
     PyVideoThumbnailerParameters: The parameters that control, which preview thumbnails images are created
                                   and their properties
     """
-    # Parameters, initialized with default values
+    # 1. Parameters, initialized with default values
     params = PyVideoThumbnailerParameters.from_defaults()
 
-    # Command line arguments
+    # 2. Parameters from user-specific configuration file
+    # Read the parameters, if the configuration file exists
+    user_home = os.path.expanduser('~')
+    config_file = os.path.join(user_home, CONFIG_FILE_NAME)
+    if os.path.isfile(config_file):
+        config = ConfigParser(allow_no_value=True)
+        config.read(config_file)
+        if CONFIG_SECTION_LAYOUT in config:
+            layout_options = config.options(CONFIG_SECTION_LAYOUT)
+            if 'width' in layout_options:
+                params.width = config.getint(CONFIG_SECTION_LAYOUT, 'width')
+            if 'columns' in layout_options:
+                params.columns = config.getint(CONFIG_SECTION_LAYOUT, 'columns')
+            if 'rows' in layout_options:
+                params.rows = config.getint(CONFIG_SECTION_LAYOUT, 'rows')
+            if 'spacing' in layout_options:
+                params.spacing = config.getint(CONFIG_SECTION_LAYOUT, 'spacing')
+            if 'header_font' in layout_options:
+                params.header_font_name = config.get(CONFIG_SECTION_LAYOUT, 'header_font')
+            if 'header_font_size' in layout_options:
+                params.header_font_size = config.getint(CONFIG_SECTION_LAYOUT, 'header_font_size')
+            if 'timestamp_font' in layout_options:
+                params.timestamp_font_name = config.get(CONFIG_SECTION_LAYOUT, 'timestamp_font')
+            if 'timestamp_font_size' in layout_options:
+                params.timestamp_font_size = config.getint(CONFIG_SECTION_LAYOUT, 'timestamp_font_size')
+        if CONFIG_SECTION_VIDEO in config:
+            video_options = config.options(CONFIG_SECTION_VIDEO)
+            if 'skip_seconds' in video_options:
+                params.skip_seconds = config.getfloat(CONFIG_SECTION_VIDEO, 'skip_seconds')
+        if CONFIG_SECTION_FILE in config:
+            file_options = config.options(CONFIG_SECTION_FILE)
+            if 'recursive' in file_options:
+                params.recursive = config.getboolean(CONFIG_SECTION_FILE, 'recursive')
+            if 'suffix' in file_options:
+                params.suffix = config.get(CONFIG_SECTION_FILE, 'suffix')
+            if 'jpeg_quality' in file_options:
+                params.jpeg_quality = config.getint(CONFIG_SECTION_FILE, 'jpeg_quality')
+            if 'override_existing' in file_options:
+                params.override_existing = config.getboolean(CONFIG_SECTION_FILE, 'override_existing')
+            if 'output_directory' in file_options:
+                params.output_directory = config.get(CONFIG_SECTION_FILE, 'output_directory')
+        if CONFIG_SECTION_PROGRAM in config:
+            program_options = config.options(CONFIG_SECTION_PROGRAM)
+            if 'raise_errors' in program_options:
+                params.raise_errors = config.getboolean(CONFIG_SECTION_PROGRAM, 'raise_errors')
+            if 'verbose' in program_options:
+                params.verbose = config.getboolean(CONFIG_SECTION_PROGRAM, 'verbose')
+
+    # 3. Command line arguments
     # Override default parameters for arguments provided by the user
     args = parse_args()
     if args.filename is not None:
@@ -606,7 +669,7 @@ def get_parameters() -> PyVideoThumbnailerParameters:
         params.raise_errors = args.raise_errors
     if args.verbose is not None:
         params.verbose = args.verbose
-    print('Path: {}'.format(params.path))
+
     return params
 
 if __name__ == '__main__':
