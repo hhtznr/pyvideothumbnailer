@@ -40,10 +40,14 @@ DEFAULT_WIDTH = 800
 DEFAULT_COLUMNS = 4
 DEFAULT_ROWS = 3
 DEFAULT_SPACING = 2
+DEFAULT_BACKGROUND_COLOR = 'white'
 DEFAULT_HEADER_FONT_NAME = None
 DEFAULT_HEADER_FONT_SIZE = 14
+DEFAULT_HEADER_FONT_COLOR = 'black'
 DEFAULT_TIMESTAMP_FONT_NAME = None
 DEFAULT_TIMESTAMP_FONT_SIZE = 12
+DEFAULT_TIMESTAMP_FONT_COLOR = 'white'
+DEFAULT_TIMESTAMP_SHADOW_COLOR = 'black'
 DEFAULT_SKIP_SECONDS = 10.0
 DEFAULT_SUFFIX = None
 DEFAULT_JPEG_QUALITY = 95
@@ -57,13 +61,11 @@ CONFIG_SECTION_VIDEO = 'Video'
 CONFIG_SECTION_FILE = 'File'
 CONFIG_SECTION_PROGRAM = 'Program'
 
-PIL_COLOR_BLACK = ImageColor.getrgb('black')
-PIL_COLOR_WHITE = ImageColor.getrgb('white')
-
 class PyVideoThumbnailerParameters:
 
     def __init__(self, path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
-                 header_font_name: str, header_font_size: int, timestamp_font_name: str, timestamp_font_size: int,
+                 background_color: str, header_font_name: str, header_font_size: int, header_font_color: str,
+                 timestamp_font_name: str, timestamp_font_size: int, timestamp_font_color: str, timestamp_shadow_color: str,
                  skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
                  raise_errors: bool, verbose: bool):
         """
@@ -77,12 +79,21 @@ class PyVideoThumbnailerParameters:
         columns (int): The number of thumbnail columns.
         rows (int): The number of thumbnail rows.
         spacing (int): The spacing in pixels between and around the preview thumbnails.
+        background_color (str): Name or other definition of the PIL color to use for the image background,
+                                for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html
         header_font_name (str): The name of a true type font to use for the header text providing information on the video file and its metadata.
                                 If omitted, a built-in default font is used.
         header_font_size (int): The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.
+        header_font_color (str): Name or other definition of the PIL color to use for the header font,
+                                 for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html
         timestamp_font_name (str): The name of a true type font to use for the preview thumbnail timestamps.
                                    If omitted, a built-in default font is used.
         timestamp_font_size (str): The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.
+        timestamp_font_color (str): Name or other definition of the PIL color to use for the timestamp font,
+                                    for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html
+        timestamp_shadow_color (str): Name or other definition of the PIL color to use for the shadow of the timestamps,
+                                      for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html
+                                      May be None to suppress drawing of a text shadow.
         skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
         suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
         jpeg_quality (int): The quality of the JPEG image file that is created.
@@ -98,10 +109,16 @@ class PyVideoThumbnailerParameters:
         self.columns = columns
         self.rows = rows
         self.spacing = spacing
+        self.background_color = ImageColor.getrgb(background_color)
         self.header_font_name = header_font_name
         self.header_font_size = header_font_size
+        self.header_font_color = ImageColor.getrgb(header_font_color)
         self.timestamp_font_name = timestamp_font_name
         self.timestamp_font_size = timestamp_font_size
+        self.timestamp_font_color = ImageColor.getrgb(timestamp_font_color)
+        self.timestamp_shadow_color = None
+        if timestamp_shadow_color is not None:
+            self.timestamp_shadow_color = ImageColor.getrgb(timestamp_shadow_color)
         self.skip_seconds = skip_seconds
         self.suffix = suffix
         self.jpeg_quality = jpeg_quality
@@ -118,10 +135,14 @@ class PyVideoThumbnailerParameters:
                                             DEFAULT_COLUMNS,
                                             DEFAULT_ROWS,
                                             DEFAULT_SPACING,
+                                            DEFAULT_BACKGROUND_COLOR,
                                             DEFAULT_HEADER_FONT_NAME,
                                             DEFAULT_HEADER_FONT_SIZE,
+                                            DEFAULT_HEADER_FONT_COLOR,
                                             DEFAULT_TIMESTAMP_FONT_NAME,
                                             DEFAULT_TIMESTAMP_FONT_SIZE,
+                                            DEFAULT_TIMESTAMP_FONT_COLOR,
+                                            DEFAULT_TIMESTAMP_SHADOW_COLOR,
                                             DEFAULT_SKIP_SECONDS,
                                             DEFAULT_SUFFIX,
                                             DEFAULT_JPEG_QUALITY,
@@ -374,23 +395,23 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
         print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, params.columns, params.rows, thumbnail_width, thumbnail_height))
 
     # PIL image for the preview thumbnails
-    thumbnails_image = Image.new('RGB', (image_width, image_height), color=PIL_COLOR_WHITE)
+    thumbnails_image = Image.new('RGB', (image_width, image_height), color=params.background_color)
     # PIL draw for adding text to the image
     thumbnails_draw = ImageDraw.Draw(thumbnails_image)
 
     # Drawing the header text
     x = x_spacing
     y = y_spacing
-    thumbnails_draw.text((x, y), file_info, PIL_COLOR_BLACK, font=header_font)
+    thumbnails_draw.text((x, y), file_info, params.header_font_color, font=header_font)
     y += text_height_file_info
     y += text_line_spacing
-    thumbnails_draw.text((x, y), size_info, PIL_COLOR_BLACK, font=header_font)
+    thumbnails_draw.text((x, y), size_info, params.header_font_color, font=header_font)
     y += text_height_size_info
     y += text_line_spacing
-    thumbnails_draw.text((x, y), video_info, PIL_COLOR_BLACK, font=header_font)
+    thumbnails_draw.text((x, y), video_info, params.header_font_color, font=header_font)
     y += text_height_video_info
     y += text_line_spacing
-    thumbnails_draw.text((x, y), audio_info, PIL_COLOR_BLACK, font=header_font)
+    thumbnails_draw.text((x, y), audio_info, params.header_font_color, font=header_font)
 
     # Font for timestamp texts
     timestamp_font = None
@@ -427,9 +448,10 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
             timestamp_position = (x_timestamp, y_timestamp)
             shadow_position = (x_timestamp + timestamp_shadow_offset, y_timestamp + timestamp_shadow_offset)
             # Black timestamp 'shadow'
-            thumbnails_draw.text(shadow_position, formatted_time, PIL_COLOR_BLACK, font=timestamp_font)
+            if params.timestamp_shadow_color is not None:
+                thumbnails_draw.text(shadow_position, formatted_time, params.timestamp_shadow_color, font=timestamp_font)
             # White timestamp text
-            thumbnails_draw.text(timestamp_position, formatted_time, PIL_COLOR_WHITE, font=timestamp_font)
+            thumbnails_draw.text(timestamp_position, formatted_time, params.timestamp_font_color, font=timestamp_font)
 
             thumbnail_count += 1
             if params.verbose:
@@ -518,6 +540,10 @@ def parse_args() -> Namespace:
     parser.add_argument('--spacing',
                          type=int,
                          help='The spacing between and around the preview thumbnails in px.')
+    parser.add_argument('--background-color',
+                         type=str,
+                         help="""Name or other definition of the PIL color to use for the image background,
+                                for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html""")
     parser.add_argument('--header-font',
                          type=str,
                          help="""The name of a true type font to use for the header text providing information on the video file and its metadata.
@@ -525,6 +551,10 @@ def parse_args() -> Namespace:
     parser.add_argument('--header-font-size',
                          type=int,
                          help='The font size of the header font, if a true type font is specified. With the built-in font, this value is ignored.')
+    parser.add_argument('--header-font-color',
+                         type=str,
+                         help="""Name or other definition of the PIL color to use for the header font,
+                         for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html""")
     parser.add_argument('--timestamp-font',
                          type=str,
                          help="""The name of a true type font to use for the preview thumbnail timestamps.
@@ -532,6 +562,14 @@ def parse_args() -> Namespace:
     parser.add_argument('--timestamp-font-size',
                          type=int,
                          help='The font size of the timestamp font, if a true type font is specified. With the built-in font, this value is ignored.')
+    parser.add_argument('--timestamp-font-color',
+                         type=str,
+                         help="""Name or other definition of the PIL color to use for the timestamp font,
+                         for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html""")
+    parser.add_argument('--timestamp-shadow-color',
+                         type=str,
+                         help="""Name or other definition of the PIL color to use for the shadow of the timestamps,
+                                 for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html""")
     parser.add_argument('--skip-seconds',
                          type=float,
                          help='The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.')
@@ -605,10 +643,24 @@ def get_parameters() -> PyVideoThumbnailerParameters:
                 params.header_font_name = config.get(CONFIG_SECTION_LAYOUT, 'header_font')
             if 'header_font_size' in layout_options:
                 params.header_font_size = config.getint(CONFIG_SECTION_LAYOUT, 'header_font_size')
+            if 'header_font_color' in layout_options:
+                color_value = config.get(CONFIG_SECTION_LAYOUT, 'header_font_color')
+                if color_value is not None and color_value != '':
+                    params.header_font_color = ImageColor.getrgb(color_value)
             if 'timestamp_font' in layout_options:
                 params.timestamp_font_name = config.get(CONFIG_SECTION_LAYOUT, 'timestamp_font')
             if 'timestamp_font_size' in layout_options:
                 params.timestamp_font_size = config.getint(CONFIG_SECTION_LAYOUT, 'timestamp_font_size')
+            if 'timestamp_font_color' in layout_options:
+                color_value = config.get(CONFIG_SECTION_LAYOUT, 'timestamp_font_color')
+                if color_value is not None and color_value != '':
+                    params.timestamp_font_color = ImageColor.getrgb(color_value)
+            if 'timestamp_shadow_color' in layout_options:
+                color_value = config.get(CONFIG_SECTION_LAYOUT, 'timestamp_shadow_color')
+                if color_value is not None and color_value != '':
+                    params.timestamp_shadow_color = ImageColor.getrgb(color_value)
+                else:
+                    params.timestamp_shadow_color = None
         if CONFIG_SECTION_VIDEO in config:
             video_options = config.options(CONFIG_SECTION_VIDEO)
             if 'skip_seconds' in video_options:
