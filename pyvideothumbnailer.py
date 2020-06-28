@@ -699,14 +699,22 @@ def get_parameters() -> PyVideoThumbnailerParameters:
         params.rows = args.rows
     if args.spacing is not None:
         params.spacing = args.spacing
+    if args.background_color is not None:
+        params.background_color = ImageColor.getrgb(args.background_color)
     if args.header_font is not None:
         params.header_font_name = args.header_font
     if args.header_font_size is not None:
         params.header_font_size = args.header_font_size
+    if args.header_font_color is not None:
+        params.header_font_color = ImageColor.getrgb(args.header_font_color)
     if args.timestamp_font is not None:
         params.timestamp_font_name = args.timestamp_font
     if args.header_font_size is not None:
         params.timestamp_font_size = args.timestamp_font_size
+    if args.timestamp_font_color is not None:
+        params.timestamp_font_color = ImageColor.getrgb(args.timestamp_font_color)
+    if args.timestamp_shadow_color is not None:
+        params.timestamp_shadow_color = ImageColor.getrgb(args.timestamp_shadow_color)
     if args.skip_seconds is not None:
         params.skip_seconds = args.skip_seconds
     if args.suffix is not None:
