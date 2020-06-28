@@ -709,7 +709,7 @@ def get_parameters() -> PyVideoThumbnailerParameters:
         params.header_font_color = ImageColor.getrgb(args.header_font_color)
     if args.timestamp_font is not None:
         params.timestamp_font_name = args.timestamp_font
-    if args.header_font_size is not None:
+    if args.timestamp_font_size is not None:
         params.timestamp_font_size = args.timestamp_font_size
     if args.timestamp_font_color is not None:
         params.timestamp_font_color = ImageColor.getrgb(args.timestamp_font_color)
