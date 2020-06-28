@@ -39,6 +39,8 @@ DEFAULT_RECURSIVE = False
 DEFAULT_WIDTH = 800
 DEFAULT_COLUMNS = 4
 DEFAULT_ROWS = 3
+DEFAULT_VERTICAL_VIDEO_COLUMNS = None
+DEFAULT_VERTICAL_VIDEO_ROWS = None
 DEFAULT_SPACING = 2
 DEFAULT_BACKGROUND_COLOR = 'white'
 DEFAULT_HEADER_FONT_NAME = None
@@ -63,7 +65,8 @@ CONFIG_SECTION_PROGRAM = 'Program'
 
 class PyVideoThumbnailerParameters:
 
-    def __init__(self, path: str, recursive: bool, width: int, columns: int, rows: int, spacing: int,
+    def __init__(self, path: str, recursive: bool, width: int, columns: int, rows: int,
+                 vertical_video_columns: int, vertical_video_rows: int, spacing: int,
                  background_color: str, header_font_name: str, header_font_size: int, header_font_color: str,
                  timestamp_font_name: str, timestamp_font_size: int, timestamp_font_color: str, timestamp_shadow_color: str,
                  skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
@@ -78,6 +81,10 @@ class PyVideoThumbnailerParameters:
         width (int): The width in pixels of the created preview thumbnails image.
         columns (int): The number of thumbnail columns.
         rows (int): The number of thumbnail rows.
+        vertical_video_columns (int): The number of preview thumbnail columns in place of argument \'columns\' in case of vertical videos.
+                                      May be set to None in order to use the same number of columns for vertical and horizontal videos.
+        vertical_video_rows (int): The number of preview thumbnail rows in place of argument \'rows\' in case of vertical videos.
+                                   May be set to None in order to use the same number of rows for vertical and horizontal videos.
         spacing (int): The spacing in pixels between and around the preview thumbnails.
         background_color (str): Name or other definition of the PIL color to use for the image background,
                                 for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html
@@ -108,6 +115,8 @@ class PyVideoThumbnailerParameters:
         self.width = width
         self.columns = columns
         self.rows = rows
+        self.vertical_video_columns = vertical_video_columns
+        self.vertical_video_rows = vertical_video_rows
         self.spacing = spacing
         self.background_color = ImageColor.getrgb(background_color)
         self.header_font_name = header_font_name
@@ -134,6 +143,8 @@ class PyVideoThumbnailerParameters:
                                             DEFAULT_WIDTH,
                                             DEFAULT_COLUMNS,
                                             DEFAULT_ROWS,
+                                            DEFAULT_VERTICAL_VIDEO_COLUMNS,
+                                            DEFAULT_VERTICAL_VIDEO_ROWS,
                                             DEFAULT_SPACING,
                                             DEFAULT_BACKGROUND_COLOR,
                                             DEFAULT_HEADER_FONT_NAME,
@@ -246,8 +257,18 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     # Duration in seconds
     duration = video_clip.duration
 
+    # The number of preview thumbnail columns and rows
+    columns = params.columns
+    rows = params.rows
+    # Use a different number of columns and rows in case of vertical videos, if requested
+    if video_aspect < 1:
+        if params.vertical_video_columns is not None:
+            columns = params.vertical_video_columns
+        if params.vertical_video_rows is not None:
+            rows = params.vertical_video_rows
+
     # The number of thumbnail images to capture
-    number_thumbnails = params.rows * params.columns
+    number_thumbnails = rows * columns
     if params.skip_seconds >= duration:
         print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(params.skip_seconds, duration), file=sys.stderr)
         return
@@ -384,15 +405,15 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     header_height += text_height_audio_info
 
     # Width and height of the individual preview thumbnails
-    thumbnail_width = float(params.width - x_spacing * (params.columns + 1)) / float(params.columns)
+    thumbnail_width = float(params.width - x_spacing * (columns + 1)) / float(columns)
     thumbnail_height = int(thumbnail_width / video_aspect)
     thumbnail_width = int(thumbnail_width)
     # Recompute image width, because actual width of the preview thumbnails may be a few pixels less due to scaling and rounding to integer pixels
-    image_width = thumbnail_width * params.columns + x_spacing * (params.columns + 1)
-    image_height = header_height + thumbnail_height * params.rows + y_spacing * (params.rows + 1)
+    image_width = thumbnail_width * columns + x_spacing * (columns + 1)
+    image_height = header_height + thumbnail_height * rows + y_spacing * (rows + 1)
 
     if params.verbose:
-        print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, params.columns, params.rows, thumbnail_width, thumbnail_height))
+        print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, columns, rows, thumbnail_width, thumbnail_height))
 
     # PIL image for the preview thumbnails
     thumbnails_image = Image.new('RGB', (image_width, image_height), color=params.background_color)
@@ -428,9 +449,9 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     thumbnail_count = 0
 
     # Iterate over rows and columns creating and placing the preview thumbnails
-    for row_index in range(params.rows):
+    for row_index in range(rows):
         y = header_height + row_index * thumbnail_height + (row_index + 1) * y_spacing
-        for column_index in range(params.columns):
+        for column_index in range(columns):
             x = column_index * thumbnail_width + (column_index + 1) * x_spacing
             # Capture, resize and position a preview thumbnail
             frame = video_clip.get_frame(time)
@@ -537,6 +558,12 @@ def parse_args() -> Namespace:
     parser.add_argument('--rows',
                          type=int,
                          help='The number of preview thumbnail rows.')
+    parser.add_argument('---vertical-video-columns',
+                         type=int,
+                         help='The number of preview thumbnail columns in place of \'--columns\' in case of vertical videos.')
+    parser.add_argument('--vertical-video-rows',
+                         type=int,
+                         help='The number of preview thumbnail rows in place of \'--rows\' in case of vertical videos.')
     parser.add_argument('--spacing',
                          type=int,
                          help='The spacing between and around the preview thumbnails in px.')
@@ -637,6 +664,10 @@ def get_parameters() -> PyVideoThumbnailerParameters:
                 params.columns = config.getint(CONFIG_SECTION_LAYOUT, 'columns')
             if 'rows' in layout_options:
                 params.rows = config.getint(CONFIG_SECTION_LAYOUT, 'rows')
+            if 'vertical_video_columns' in layout_options:
+                params.vertical_video_columns = config.getint(CONFIG_SECTION_LAYOUT, 'vertical_video_columns')
+            if 'vertical_video_rows' in layout_options:
+                params.vertical_video_rows = config.getint(CONFIG_SECTION_LAYOUT, 'vertical_video_rows')
             if 'spacing' in layout_options:
                 params.spacing = config.getint(CONFIG_SECTION_LAYOUT, 'spacing')
             if 'header_font' in layout_options:
@@ -697,6 +728,10 @@ def get_parameters() -> PyVideoThumbnailerParameters:
         params.columns = args.columns
     if args.rows is not None:
         params.rows = args.rows
+    if args.vertical_video_columns is not None:
+        params.vertical_video_columns = args.vertical_video_columns
+    if args.vertical_video_rows is not None:
+        params.vertical_video_rows = args.vertical_video_rows
     if args.spacing is not None:
         params.spacing = args.spacing
     if args.background_color is not None:
