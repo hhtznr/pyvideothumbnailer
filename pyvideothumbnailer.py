@@ -194,7 +194,7 @@ def format_time(duration_in_seconds: float) -> str:
     # Determine full hours
     hours = int(duration / 3600)
     # Determine full minutes of started hour
-    minutes = int((duration - hours * 60) / 60)
+    minutes = int((duration - (hours * 3600)) / 60)
     # Determine full seconds of started minute
     seconds = int(duration - hours * 60 * 60 - minutes * 60)
     return '{:0>2d}:{:0>2d}:{:0>2d}'.format(hours, minutes, seconds)
