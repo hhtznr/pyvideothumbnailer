@@ -50,6 +50,8 @@ DEFAULT_TIMESTAMP_FONT_NAME = None
 DEFAULT_TIMESTAMP_FONT_SIZE = 12
 DEFAULT_TIMESTAMP_FONT_COLOR = 'white'
 DEFAULT_TIMESTAMP_SHADOW_COLOR = 'black'
+DEFAULT_COMMENT_LABEL = 'Comment:'
+DEFAULT_COMMENT_TEXT = None
 DEFAULT_SKIP_SECONDS = 10.0
 DEFAULT_SUFFIX = None
 DEFAULT_JPEG_QUALITY = 95
@@ -59,6 +61,7 @@ DEFAULT_RAISE_ERRORS = False
 DEFAULT_VERBOSE = False
 
 CONFIG_SECTION_LAYOUT = 'Layout'
+CONFIG_SECTION_HEADER = 'Header'
 CONFIG_SECTION_VIDEO = 'Video'
 CONFIG_SECTION_FILE = 'File'
 CONFIG_SECTION_PROGRAM = 'Program'
@@ -69,6 +72,7 @@ class PyVideoThumbnailerParameters:
                  vertical_video_columns: int, vertical_video_rows: int, spacing: int,
                  background_color: str, header_font_name: str, header_font_size: int, header_font_color: str,
                  timestamp_font_name: str, timestamp_font_size: int, timestamp_font_color: str, timestamp_shadow_color: str,
+                 comment_label: str, comment_text: str,
                  skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
                  raise_errors: bool, verbose: bool):
         """
@@ -101,6 +105,10 @@ class PyVideoThumbnailerParameters:
         timestamp_shadow_color (str): Name or other definition of the PIL color to use for the shadow of the timestamps,
                                       for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html
                                       May be None to suppress drawing of a text shadow.
+        comment_label (str): The label string of an optional user-defined comment added at the bottom of the video metadata information.
+                             If not defined, the default label 'Comment:' is used.
+        comment_text (str): An optional user-defined comment added added at the bottom of the video metadata information.
+                            If not defined, no comment is added and the respective text line is omitted in the header.
         skip_seconds (float): The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.
         suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
         jpeg_quality (int): The quality of the JPEG image file that is created.
@@ -128,6 +136,8 @@ class PyVideoThumbnailerParameters:
         self.timestamp_shadow_color = None
         if timestamp_shadow_color is not None:
             self.timestamp_shadow_color = ImageColor.getrgb(timestamp_shadow_color)
+        self.comment_label = comment_label
+        self.comment_text = comment_text
         self.skip_seconds = skip_seconds
         self.suffix = suffix
         self.jpeg_quality = jpeg_quality
@@ -154,6 +164,8 @@ class PyVideoThumbnailerParameters:
                                             DEFAULT_TIMESTAMP_FONT_SIZE,
                                             DEFAULT_TIMESTAMP_FONT_COLOR,
                                             DEFAULT_TIMESTAMP_SHADOW_COLOR,
+                                            DEFAULT_COMMENT_LABEL,
+                                            DEFAULT_COMMENT_TEXT,
                                             DEFAULT_SKIP_SECONDS,
                                             DEFAULT_SUFFIX,
                                             DEFAULT_JPEG_QUALITY,
@@ -369,11 +381,20 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     video_info = 'Video: {}'.format(video_info)
     audio_info = 'Audio: {}'.format(audio_info)
 
+    comment = None
+    if params.comment_text is not None:
+        comment_label = params.comment_label
+        if not comment_label.endswith(':'):
+            comment_label = '{}:'.format(comment_label)
+        comment = '{} {}'.format(comment_label, params.comment_text)
+
     if params.verbose:
         print(file_info)
         print(size_info)
         print(video_info)
         print(audio_info)
+        if comment is not None:
+            print(comment)
 
     # Vertical (x) and horizontal (y) spacing between and around the preview thumbnails
     x_spacing = params.spacing
@@ -393,6 +414,9 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     text_height_size_info = header_font.getsize(size_info)[1]
     text_height_video_info = header_font.getsize(video_info)[1]
     text_height_audio_info = header_font.getsize(audio_info)[1]
+    text_height_comment = 0
+    if comment is not None:
+        text_height_comment = header_font.getsize(comment)[1]
 
     # Compute the height of the header
     header_height = y_spacing
@@ -403,6 +427,9 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     header_height += text_height_video_info
     header_height += text_line_spacing
     header_height += text_height_audio_info
+    if comment is not None:
+        header_height += text_line_spacing
+        header_height += text_height_comment
 
     # Width and height of the individual preview thumbnails
     thumbnail_width = float(params.width - x_spacing * (columns + 1)) / float(columns)
@@ -433,6 +460,10 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     y += text_height_video_info
     y += text_line_spacing
     thumbnails_draw.text((x, y), audio_info, params.header_font_color, font=header_font)
+    if comment is not None:
+        y += text_height_comment
+        y += text_line_spacing
+        thumbnails_draw.text((x, y), comment, params.header_font_color, font=header_font)
 
     # Font for timestamp texts
     timestamp_font = None
@@ -597,6 +628,14 @@ def parse_args() -> Namespace:
                          type=str,
                          help="""Name or other definition of the PIL color to use for the shadow of the timestamps,
                                  for information on accepted values see https://pillow.readthedocs.io/en/stable/reference/ImageColor.html""")
+    parser.add_argument('--comment-label',
+                         type=str,
+                         help="""Label used for an optional user-defined comment, which is added at the bottom of the video
+                                 metadata information. If not defined, the default label 'Comment:' is used.""")
+    parser.add_argument('--comment-text',
+                         type=str,
+                         help="""Text of an optional user-defined comment, which is added at the bottom of the video metadata information.
+                                 If not defined, no comment is added and the respective text line is omitted in the header.""")
     parser.add_argument('--skip-seconds',
                          type=float,
                          help='The number of seconds to skip at the beginning of the video before capturing the first preview thumbnail.')
@@ -692,6 +731,12 @@ def get_parameters() -> PyVideoThumbnailerParameters:
                     params.timestamp_shadow_color = ImageColor.getrgb(color_value)
                 else:
                     params.timestamp_shadow_color = None
+        if CONFIG_SECTION_HEADER in config:
+            header_options = config.options(CONFIG_SECTION_HEADER)
+            if 'comment_label' in header_options:
+                params.comment_label = config.get(CONFIG_SECTION_HEADER, 'comment_label')
+            if 'comment_text' in header_options:
+                params.comment_text = config.get(CONFIG_SECTION_HEADER, 'comment_text')
         if CONFIG_SECTION_VIDEO in config:
             video_options = config.options(CONFIG_SECTION_VIDEO)
             if 'skip_seconds' in video_options:
@@ -750,6 +795,10 @@ def get_parameters() -> PyVideoThumbnailerParameters:
         params.timestamp_font_color = ImageColor.getrgb(args.timestamp_font_color)
     if args.timestamp_shadow_color is not None:
         params.timestamp_shadow_color = ImageColor.getrgb(args.timestamp_shadow_color)
+    if args.comment_label is not None:
+        params.comment_label = args.comment_label
+    if args.comment_text is not None:
+        params.comment_text = args.comment_text
     if args.skip_seconds is not None:
         params.skip_seconds = args.skip_seconds
     if args.suffix is not None:
