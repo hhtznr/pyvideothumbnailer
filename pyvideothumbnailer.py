@@ -1,4 +1,22 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""Python Video Thumbnailer
+
+Pyhton Video Thumbnailer is a command line tool for creating video preview thumbnails.
+It can be used to create preview images of individual video files, videos located in
+a directory and optionally its subdirectories.
+
+It is based on MoviePy, MediaInfo and PIL/Pillow.
+
+For usage and available options, run with the option ```--help```.
+
+For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
+
+@Author  :    Harald Hetzner
+@License :    BSD 3-Clause License
+@Version :    1.0.0
+"""
 
 from __future__ import annotations
 
