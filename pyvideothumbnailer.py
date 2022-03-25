@@ -1,5 +1,8 @@
 #!/usr/bin/python3
 
+import os
+import sys
+
 from __future__ import annotations
 
 from argparse import ArgumentParser
@@ -18,9 +21,6 @@ from PIL import Image
 from PIL import ImageColor
 from PIL import ImageDraw
 from PIL import ImageFont
-
-import os
-import sys
 
 CONFIG_FILE_NAME = '.pyvideothumbnailer.conf'
 
