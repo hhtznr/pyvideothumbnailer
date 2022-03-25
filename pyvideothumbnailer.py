@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
+from __future__ import annotations
+
 import os
 import sys
-
-from __future__ import annotations
 
 from argparse import ArgumentParser
 from argparse import Namespace
