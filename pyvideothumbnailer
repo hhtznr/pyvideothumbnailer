@@ -15,7 +15,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 @Author  :    Harald Hetzner
 @License :    BSD 3-Clause License
-@Version :    1.0.0
+@Version :    1.0.1
 """
 
 from __future__ import annotations
@@ -91,7 +91,7 @@ class PyVideoThumbnailerParameters:
                  background_color: str, header_font_name: str, header_font_size: int, header_font_color: str,
                  timestamp_font_name: str, timestamp_font_size: int, timestamp_font_color: str, timestamp_shadow_color: str,
                  comment_label: str, comment_text: str,
-                 skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory_path: str,
+                 skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory: str,
                  raise_errors: bool, verbose: bool):
         """
         Constructor for an instance of the object holding all of the parameters of Python Video Thumbnailer.
@@ -131,8 +131,8 @@ class PyVideoThumbnailerParameters:
         suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
         jpeg_quality (int): The quality of the JPEG image file that is created.
         override_existing (bool): If True, override image files that exist by the same name as the created image files.
-        output_directory_path (str): A directory, where all created preview thumbnails images should be saved.
-                                     If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
+        output_directory (str): A directory, where all created preview thumbnails images should be saved.
+                                If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
         raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
         verbose (bool): Print verbose information and messages.
         """
@@ -160,7 +160,7 @@ class PyVideoThumbnailerParameters:
         self.suffix = suffix
         self.jpeg_quality = jpeg_quality
         self.override_existing = override_existing
-        self.output_directory_path = output_directory_path
+        self.output_directory = output_directory
         self.raise_errors = raise_errors
         self.verbose = verbose
 
@@ -254,10 +254,10 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     if params.suffix is None:
         params.suffix = ''
     image_path = None
-    if params.output_directory_path is None:
+    if params.output_directory is None:
         image_path = '{}{}.jpg'.format(file_path, params.suffix)
     else:
-        image_path = os.path.join(params.output_directory_path, '{}{}.jpg'.format(os.path.basename(file_path), params.suffix))
+        image_path = os.path.join(params.output_directory, '{}{}.jpg'.format(os.path.basename(file_path), params.suffix))
 
     if os.path.exists(image_path):
         if not params.override_existing:
@@ -826,7 +826,7 @@ def get_parameters() -> PyVideoThumbnailerParameters:
     if args.override_existing is not False:
         params.override_existing = args.override_existing
     if args.output_directory is not None:
-        params.output_directory_path = args.output_directory
+        params.output_directory = args.output_directory
     if args.raise_errors is not False:
         params.raise_errors = args.raise_errors
     if args.verbose is not None:
@@ -839,17 +839,17 @@ if __name__ == '__main__':
     params = get_parameters()
 
     # Take care of optional output directory
-    if params.output_directory_path is not None:
+    if params.output_directory is not None:
         # If the directory does not yet exist, create it recursively
-        if not os.path.exists(params.output_directory_path):
+        if not os.path.exists(params.output_directory):
             try:
-                os.makedirs(params.output_directory_path)
+                os.makedirs(params.output_directory)
             except Exception as e:
-                print('Unable to create output directory \'{}\': {}'.format(os.path.abspath(params.output_directory_path), e), file=sys.stderr)
+                print('Unable to create output directory \'{}\': {}'.format(os.path.abspath(params.output_directory), e), file=sys.stderr)
                 sys.exit(1)
         # Exit if the path of the directory already exists, but is not a directory
         elif not os.path.isdir(params.output_directory):
-            print('Path of the output directory already exists and is not a directory: \'{}\''.format(os.path.abspath(params.output_directory_path)), file=sys.stderr)
+            print('Path of the output directory already exists and is not a directory: \'{}\''.format(os.path.abspath(params.output_directory)), file=sys.stderr)
             sys.exit(1)
 
     # Process preview thumbnails image creation
