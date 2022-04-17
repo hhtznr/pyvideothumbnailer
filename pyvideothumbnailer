@@ -15,7 +15,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 @Author  :    Harald Hetzner
 @License :    BSD 3-Clause License
-@Version :    1.0.1
+@Version :    1.0.3
 """
 
 from __future__ import annotations
@@ -504,8 +504,7 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
             x = column_index * thumbnail_width + (column_index + 1) * x_spacing
             # Capture, resize and position a preview thumbnail
             frame = video_clip.get_frame(time)
-            image = Image.fromarray(frame)
-            image.thumbnail((thumbnail_width, thumbnail_height))
+            image = Image.fromarray(frame).resize((thumbnail_width, thumbnail_height))
             thumbnails_image.paste(image, box=(x, y))
 
             # Add a human-readable timestamp to the preview thumbnail
