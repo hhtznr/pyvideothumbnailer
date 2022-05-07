@@ -15,7 +15,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 @Author  :    Harald Hetzner
 @License :    BSD 3-Clause License
-@Version :    1.0.3
+@Version :    1.1.0
 """
 
 from __future__ import annotations
@@ -31,8 +31,8 @@ from configparser import ConfigParser
 # Library for accessing metadata and other media information (https://github.com/sbraz/pymediainfo)
 from pymediainfo import MediaInfo
 
-# Library for video editing (https://github.com/Zulko/moviepy)
-from moviepy.editor import VideoFileClip
+# Library for video editing (https://github.com/PyAV-Org/PyAV)
+import av
 
 # Python imaging library (https://python-pillow.org/)
 from PIL import Image
@@ -271,42 +271,9 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
 
     print('Creating preview thumbnails for \'{}\' ...'.format(os.path.abspath(file_path)))
 
-    # Open the video file. Raises an IOError if the file is not a video.
-    video_clip = VideoFileClip(file_path)
-
-    # Width in px
-    video_width = video_clip.w
-    # Height in px
-    video_height = video_clip.h
-    # Aspect ratio
-    video_aspect = float(video_width) / float(video_height)
-    # Number of frames
-    number_frames = video_clip.reader.nframes
-    # Frames per second
-    fps = video_clip.fps
-    # Duration in seconds
-    duration = video_clip.duration
-
-    # The number of preview thumbnail columns and rows
-    columns = params.columns
-    rows = params.rows
-    # Use a different number of columns and rows in case of vertical videos, if requested
-    if video_aspect < 1:
-        if params.vertical_video_columns is not None:
-            columns = params.vertical_video_columns
-        if params.vertical_video_rows is not None:
-            rows = params.vertical_video_rows
-
-    # The number of thumbnail images to capture
-    number_thumbnails = rows * columns
-    if params.skip_seconds >= duration:
-        print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(params.skip_seconds, duration), file=sys.stderr)
-        return
-    # The time step for iterating over the clip and capturing thumbnails
-    time_step = (duration - params.skip_seconds) / number_thumbnails
-    if time_step < 1.0 / fps:
-        print('Video clip ({} frames) is too short to generate {} distinct preview thumbnails'.format(number_frames, number_thumbnails), file=sys.stderr)
-        return
+    # Open the video file.
+    container = av.open(file_path)
+    video_stream =  container.streams.video[0]
 
     # Parse the metadata from the video file
     # Dictionaries with general metadata, video metadata and audio metadata
@@ -327,9 +294,51 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
             continue
 
         if params.verbose:
-            for key, value in metadata.items():
+            print('{} metadata:'.format(track.track_type))
+            for key, value in sorted(metadata.items()):
                 print('{}: {}'.format(key, value))
             print()
+
+    # General and video metadata information must be present
+    if general_metadata is None:
+        raise Exception('Could not read general metadata from \'{}\'.'.format(file_path))
+    if video_metadata is None:
+        raise Exception('Could not read video metadata from \'{}\'.'.format(file_path))
+
+    # Width in px
+    video_width = int(video_metadata['width'])
+    # Height in px
+    video_height = int(video_metadata['height'])
+    # Aspect ratio
+    video_aspect = float(video_width) / float(video_height)
+    # Frames per second
+    fps = float(video_metadata['frame_rate'])
+    # Duration in seconds
+    try:
+        duration = int(video_metadata['duration']) / 1000.0
+    except KeyError:
+        raise Exception('Video stream in \'{}\' has no duration set in metadata. Cannot calculate preview timestamps.'.format(file_path))
+
+    # The number of preview thumbnail columns and rows
+    columns = params.columns
+    rows = params.rows
+    # Use a different number of columns and rows in case of vertical videos, if requested
+    if video_aspect < 1:
+        if params.vertical_video_columns is not None:
+            columns = params.vertical_video_columns
+        if params.vertical_video_rows is not None:
+            rows = params.vertical_video_rows
+
+    # The number of thumbnail images to capture
+    number_thumbnails = rows * columns
+    if params.skip_seconds >= duration:
+        print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(params.skip_seconds, duration), file=sys.stderr)
+        return
+    # The time step for iterating over the clip and capturing thumbnails
+    time_step = (duration - params.skip_seconds) / number_thumbnails
+    if time_step < 1.0 / fps:
+        print('Video clip is too short to generate {} distinct preview thumbnails'.format(number_thumbnails), file=sys.stderr)
+        return
 
     # Header for the preview thumbnails image providing file and metadata information
     # File information
@@ -341,10 +350,6 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
         size_info = 'Size: {} B ({}), Duration: {}'.format(file_size, format_size(file_size), format_time(duration))
     else:
         size_info = 'Size: {} B, Duration: {}'.format(file_size, format_time(duration))
-
-    # Video metadata information
-    if video_metadata is None:
-        return
 
     video_metadata['resolution'] = '{}x{}'.format(video_width, video_height)
 
@@ -501,11 +506,24 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     for row_index in range(rows):
         y = header_height + row_index * thumbnail_height + (row_index + 1) * y_spacing
         for column_index in range(columns):
+            # https://programtalk.com/vs2/python/8441/PyAV/tests/test_seek.py/
+            target_timestamp = int(time / video_stream.time_base) + video_stream.start_time
+            # Seeks to the frame at target_timestamp if it is a keyframe or the last keyframe before
+            container.seek(target_timestamp, stream=video_stream)
             x = column_index * thumbnail_width + (column_index + 1) * x_spacing
             # Capture, resize and position a preview thumbnail
-            frame = video_clip.get_frame(time)
-            image = Image.fromarray(frame).resize((thumbnail_width, thumbnail_height))
-            thumbnails_image.paste(image, box=(x, y))
+            frame_captured = False
+            for packet in container.demux(video_stream):
+                for frame in packet.decode():
+                    # pts = presentation timestamp in time_base units
+                    if frame.pts >= target_timestamp:
+                        # VideoFrame.to_image() returns a PIL image
+                        image = frame.to_image().resize((thumbnail_width, thumbnail_height))
+                        thumbnails_image.paste(image, box=(x, y))
+                        frame_captured = True
+                        break
+                if frame_captured:
+                    break
 
             # Add a human-readable timestamp to the preview thumbnail
             formatted_time = format_time(time)
@@ -533,7 +551,7 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     thumbnails_image.save(image_path, quality=params.jpeg_quality)
 
     # Close the video clip
-    video_clip.close()
+    container.close()
     print('Done.')
 
 def has_video_extension(file_name: str) -> bool:
