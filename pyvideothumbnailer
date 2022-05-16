@@ -15,7 +15,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 @Author  :    Harald Hetzner
 @License :    BSD 3-Clause License
-@Version :    1.1.0
+@Version :    1.1.1
 """
 
 from __future__ import annotations
@@ -602,8 +602,10 @@ def process_file_or_directory(params: PyVideoThumbnailerParameters) -> None:
         file_path = os.path.join(params.path, file_name)
         # If recursive, call the process method on any subdirectories
         if params.recursive and os.path.isdir(file_path):
+            parent_path = params.path
             params.path = file_path
             process_file_or_directory(params)
+            params.path = parent_path
         # Create preview thumbnails of (potential) video files
         elif os.path.isfile(file_path) and has_video_extension(file_name):
             try:
