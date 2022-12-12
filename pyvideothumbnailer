@@ -315,7 +315,7 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     fps = float(video_metadata['frame_rate'])
     # Duration in seconds
     try:
-        duration = int(video_metadata['duration']) / 1000.0
+        duration = float(video_metadata['duration']) / 1000.0
     except KeyError:
         raise Exception('Video stream in \'{}\' has no duration set in metadata. Cannot calculate preview timestamps.'.format(file_path))
 
