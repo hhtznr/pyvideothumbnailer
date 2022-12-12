@@ -15,7 +15,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 @Author  :    Harald Hetzner
 @License :    BSD 3-Clause License
-@Version :    1.1.1
+@Version :    1.1.2
 """
 
 from __future__ import annotations
@@ -433,13 +433,13 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
         header_font = ImageFont.truetype(font=params.header_font_name, size=params.header_font_size)
 
     # Height of the header texts
-    text_height_file_info = header_font.getsize(file_info)[1]
-    text_height_size_info = header_font.getsize(size_info)[1]
-    text_height_video_info = header_font.getsize(video_info)[1]
-    text_height_audio_info = header_font.getsize(audio_info)[1]
+    text_height_file_info = int(header_font.getlength(file_info))
+    text_height_size_info = int(header_font.getlength(size_info))
+    text_height_video_info = int(header_font.getlength(video_info))
+    text_height_audio_info = int(header_font.getlength(audio_info))
     text_height_comment = 0
     if comment is not None:
-        text_height_comment = header_font.getsize(comment)[1]
+        text_height_comment = int(header_font.getlength(comment))
 
     # Compute the height of the header
     header_height = y_spacing
@@ -527,9 +527,9 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
 
             # Add a human-readable timestamp to the preview thumbnail
             formatted_time = format_time(time)
-            timestamp_size = timestamp_font.getsize(formatted_time)
-            timestamp_width = timestamp_size[0]
-            timestamp_height = timestamp_size[1]
+            timestamp_size = timestamp_font.getbbox(formatted_time)
+            timestamp_width = int(timestamp_size[0])
+            timestamp_height = int(timestamp_size[1])
             x_timestamp = x + thumbnail_width - timestamp_width - x_spacing_timestamp
             y_timestamp = y + thumbnail_height - timestamp_height - y_spacing_timestamp - timestamp_shadow_offset
             timestamp_position = (x_timestamp, y_timestamp)
