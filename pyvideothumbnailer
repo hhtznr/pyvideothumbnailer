@@ -219,8 +219,8 @@ def format_time(duration_in_seconds: float) -> str:
     Returns:
     str: A human-readable representation of the duration.
     """
-    # Cast duration to full seconds
-    duration = int(duration_in_seconds)
+    # Parse duration and cast to full seconds
+    duration = int(float(duration_in_seconds))
     # Determine full hours
     hours = int(duration / 3600)
     # Determine full minutes of started hour
