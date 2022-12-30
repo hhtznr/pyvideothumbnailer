@@ -15,7 +15,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 @Author  :    Harald Hetzner
 @License :    BSD 3-Clause License
-@Version :    1.1.2
+@Version :    1.1.3
 """
 
 from __future__ import annotations
@@ -241,6 +241,20 @@ def format_bit_rate(bits_per_second: int) -> str:
     """
     return '{} kb/s'.format(int(round(bits_per_second / 1000.0, 0)))
 
+def get_font_height(text: str, font: ImageFont.ImageFont) -> int:
+    """
+    Determine the height of a text using a specific font.
+
+    Parameters:
+    text (str): Text to render.
+    font (ImageFont.ImageFont): Font to use for rendering the text.
+
+    Returns:
+    int: The height of the given text using the font.
+    """
+    bbox = font.getbbox(text)
+    return int(bbox[3] - bbox[1]) + 1
+
 def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: str) -> None:
     """
     Create preview thumbnails of a video file.
@@ -433,13 +447,13 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
         header_font = ImageFont.truetype(font=params.header_font_name, size=params.header_font_size)
 
     # Height of the header texts
-    text_height_file_info = int(header_font.getlength(file_info))
-    text_height_size_info = int(header_font.getlength(size_info))
-    text_height_video_info = int(header_font.getlength(video_info))
-    text_height_audio_info = int(header_font.getlength(audio_info))
+    text_height_file_info = get_font_height(file_info, header_font)
+    text_height_size_info = get_font_height(size_info, header_font)
+    text_height_video_info = get_font_height(video_info, header_font)
+    text_height_audio_info = get_font_height(audio_info, header_font)
     text_height_comment = 0
     if comment is not None:
-        text_height_comment = int(header_font.getlength(comment))
+        text_height_comment = get_font_height(comment, header_font)
 
     # Compute the height of the header
     header_height = y_spacing
@@ -495,7 +509,7 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
     else:
         timestamp_font = ImageFont.truetype(font=params.timestamp_font_name, size=params.timestamp_font_size)
     x_spacing_timestamp = 2
-    y_spacing_timestamp = 2
+    y_spacing_timestamp = 3
     timestamp_shadow_offset = 1
 
     # Video time at which to capture the next preview
@@ -527,9 +541,8 @@ def create_preview_thumbnails(params: PyVideoThumbnailerParameters, file_path: s
 
             # Add a human-readable timestamp to the preview thumbnail
             formatted_time = format_time(time)
-            timestamp_size = timestamp_font.getbbox(formatted_time)
-            timestamp_width = int(timestamp_size[0])
-            timestamp_height = int(timestamp_size[1])
+            timestamp_width = timestamp_font.getlength(formatted_time)
+            timestamp_height = get_font_height(formatted_time, timestamp_font)
             x_timestamp = x + thumbnail_width - timestamp_width - x_spacing_timestamp
             y_timestamp = y + thumbnail_height - timestamp_height - y_spacing_timestamp - timestamp_shadow_offset
             timestamp_position = (x_timestamp, y_timestamp)
