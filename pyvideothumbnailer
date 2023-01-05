@@ -629,6 +629,21 @@ def process_file_or_directory(params: PyVideoThumbnailerParameters) -> None:
                 else:
                     print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
 
+def get_bool_store_action(b: bool) -> str:
+    """
+    Returns the store action string for the action parameter of ArgumentParser,
+    which corresponds to the given boolean value.
+
+    Parameters:
+    b (bool): The boolean value.
+
+    Returns:
+    str: The store action for the boolean value, either 'store_true' or 'store_false'
+    """
+    if b:
+        return 'store_true'
+    return 'store_false'
+
 def parse_args() -> Namespace:
     parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.')
     parser.add_argument('--width',
@@ -697,22 +712,22 @@ def parse_args() -> Namespace:
                          type=int,
                          help='The quality of the JPEG image files that are created.')
     parser.add_argument('--override-existing',
-                         action='store_true',
+                         action=get_bool_store_action(not DEFAULT_OVERRIDE_EXISTING),
                          help="""Override any existing image files, which have the same name as the generated images.
                          By default, a preview thumbnails image is not created, if the file to be created already exists.""")
     parser.add_argument('--recursive',
-                         action='store_true',
+                         action=get_bool_store_action(not DEFAULT_RECURSIVE),
                          help='If creating preview thumbnails of video files in a directory, process subdirectories recursively.')
     parser.add_argument('--output-directory',
                          type=str,
                          help="""A directory, where all created preview thumbnails images should be saved.
                          If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.""")
     parser.add_argument('--raise-errors',
-                         action='store_true',
+                         action=get_bool_store_action(not DEFAULT_RAISE_ERRORS),
                          help="""Stop if an error occurs by raising it. By default, errors are ignored and the affected preview thumbnails image is skipped.
                          This is useful, when processing multiple video files in a directory.""")
     parser.add_argument('--verbose',
-                         action='store_true',
+                         action=get_bool_store_action(not DEFAULT_VERBOSE),
                          help='Print verbose information and messages.')
     parser.add_argument('filename',
                          nargs='?',
@@ -816,7 +831,7 @@ def get_parameters() -> PyVideoThumbnailerParameters:
     args = parse_args()
     if args.filename is not None:
         params.path = args.filename
-    if args.recursive is not False:
+    if args.recursive is not DEFAULT_RECURSIVE:
         params.recursive = args.recursive
     if args.width is not None:
         params.width = args.width
@@ -856,13 +871,13 @@ def get_parameters() -> PyVideoThumbnailerParameters:
         params.suffix = args.suffix
     if args.jpeg_quality is not None:
         params.jpeg_quality = args.jpeg_quality
-    if args.override_existing is not False:
+    if args.override_existing is not DEFAULT_OVERRIDE_EXISTING:
         params.override_existing = args.override_existing
     if args.output_directory is not None:
         params.output_directory = args.output_directory
-    if args.raise_errors is not False:
+    if args.raise_errors is not DEFAULT_RAISE_ERRORS:
         params.raise_errors = args.raise_errors
-    if args.verbose is not None:
+    if args.verbose is not DEFAULT_VERBOSE:
         params.verbose = args.verbose
 
     return params
