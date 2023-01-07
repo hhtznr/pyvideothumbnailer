@@ -996,14 +996,24 @@ class VideoThumbnailer:
         file_names = None
         # If the path is a directory, list its contents
         if os.path.isdir(path):
+            if not os.access(path, os.X_OK | os.W_OK):
+                print('Cannot consider directory \'{}\'. Permission for writing files to it is denied.'.format(os.path.abspath(path)))
+                return
             file_names = sorted(os.listdir(path))
         # If the path is a file, get its dirname and basename
         elif os.path.isfile(path):
+            if not os.access(path, os.R_OK):
+                print('Cannot consider video file \'{}\'. Permission for reading it is denied.'.format(os.path.abspath(path)))
+                return
             path_elements = os.path.split(path)
             # dirname
             path = path_elements[0]
+            file_name = path_elements[1]
+            if not os.access(path, os.X_OK | os.W_OK):
+                print('Cannot consider video file \'{}\'. Permission for writing files to its directory \'{}\' is denied.'.format(file_name, os.path.abspath(path)))
+                return
             # basename (as sole element in a list to be compatible with iteration below)
-            file_names = [path_elements[1]]
+            file_names = [file_name]
         else:
             print('Path \'{}\' is neither a file nor a directory.'.format(os.path.abspath(path)))
             return
