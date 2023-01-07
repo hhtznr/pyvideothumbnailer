@@ -131,4 +131,5 @@ dmypy.json
 # Eclipse Pydev
 .project
 .pydevproject
+.settings/
 
