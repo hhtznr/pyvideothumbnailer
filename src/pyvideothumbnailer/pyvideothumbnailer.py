@@ -323,28 +323,28 @@ class VideoThumbnailer:
         self.__init_parameters()
 
         # Take care of optional output directory
-        if self.__params.output_directory is not None:
+        if self.parameters.output_directory is not None:
             # If the directory does not yet exist, create it recursively
-            if not self.__params.output_directory.exists():
+            if not self.parameters.output_directory.exists():
                 try:
-                    self.__params.output_directory.mkdir(parents=True, exist_ok=True)
+                    self.parameters.output_directory.mkdir(parents=True, exist_ok=True)
                 except Exception as e:
-                    message = 'Unable to create output directory \'{}\': {}'.format(self.__params.output_directory.absolute(), e)
+                    message = 'Unable to create output directory \'{}\': {}'.format(self.parameters.output_directory.absolute(), e)
                     raise VideoThumbnailerException(message)
             # Exit if the path of the directory already exists, but is not a directory
-            elif not self.__params.output_directory.is_dir():
-                message = 'Path of the output directory already exists and is not a directory: \'{}\''.format(self.__params.output_directory.absolute())
+            elif not self.parameters.output_directory.is_dir():
+                message = 'Path of the output directory already exists and is not a directory: \'{}\''.format(self.parameters.output_directory.absolute())
                 raise VideoThumbnailerException(message)
 
         self.__video_extensions = VideoThumbnailer.DEFAULT_VIDEO_EXTENSIONS
 
         # Font for the header texts
         self.__header_font = None
-        if not self.__params.no_header:
-            if self.__params.header_font_name is None:
+        if not self.parameters.no_header:
+            if self.parameters.header_font_name is None:
                 self.__header_font = ImageFont.load_default()
             else:
-                self.__header_font = ImageFont.truetype(font=self.__params.header_font_name, size=self.__params.header_font_size)
+                self.__header_font = ImageFont.truetype(font=self.parameters.header_font_name, size=self.parameters.header_font_size)
 
     @staticmethod
     def __get_bool_store_action(b: bool) -> str:
@@ -470,7 +470,7 @@ class VideoThumbnailer:
         3. Parameters supplied as command line arguments
         """
         # 1. Parameters, initialized with default values
-        self.__params = Parameters.from_defaults()
+        self.parameters = Parameters.from_defaults()
 
         # 2. Parameters from user-specific configuration file
         # Read the parameters, if the configuration file exists
@@ -481,136 +481,127 @@ class VideoThumbnailer:
             if ConfigFile.CONFIG_SECTION_LAYOUT in config:
                 layout_options = config.options(ConfigFile.CONFIG_SECTION_LAYOUT)
                 if 'width' in layout_options:
-                    self.__params.width = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'width')
+                    self.parameters.width = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'width')
                 if 'columns' in layout_options:
-                    self.__params.columns = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'columns')
+                    self.parameters.columns = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'columns')
                 if 'rows' in layout_options:
-                    self.__params.rows = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'rows')
+                    self.parameters.rows = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'rows')
                 if 'vertical_video_columns' in layout_options:
-                    self.__params.vertical_video_columns = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'vertical_video_columns')
+                    self.parameters.vertical_video_columns = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'vertical_video_columns')
                 if 'vertical_video_rows' in layout_options:
-                    self.__params.vertical_video_rows = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'vertical_video_rows')
+                    self.parameters.vertical_video_rows = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'vertical_video_rows')
                 if 'spacing' in layout_options:
-                    self.__params.spacing = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'spacing')
+                    self.parameters.spacing = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'spacing')
                 if 'no_header' in layout_options:
-                    self.__params.no_header = config.getboolean(ConfigFile.CONFIG_SECTION_LAYOUT, 'no_header')
+                    self.parameters.no_header = config.getboolean(ConfigFile.CONFIG_SECTION_LAYOUT, 'no_header')
                 if 'header_font' in layout_options:
-                    self.__params.header_font_name = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'header_font')
+                    self.parameters.header_font_name = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'header_font')
                 if 'header_font_size' in layout_options:
-                    self.__params.header_font_size = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'header_font_size')
+                    self.parameters.header_font_size = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'header_font_size')
                 if 'header_font_color' in layout_options:
                     color_value = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'header_font_color')
                     if color_value is not None and color_value != '':
-                        self.__params.header_font_color = ImageColor.getrgb(color_value)
+                        self.parameters.header_font_color = ImageColor.getrgb(color_value)
                 if 'timestamp_font' in layout_options:
-                    self.__params.timestamp_font_name = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'timestamp_font')
+                    self.parameters.timestamp_font_name = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'timestamp_font')
                 if 'timestamp_font_size' in layout_options:
-                    self.__params.timestamp_font_size = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'timestamp_font_size')
+                    self.parameters.timestamp_font_size = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'timestamp_font_size')
                 if 'timestamp_font_color' in layout_options:
                     color_value = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'timestamp_font_color')
                     if color_value is not None and color_value != '':
-                        self.__params.timestamp_font_color = ImageColor.getrgb(color_value)
+                        self.parameters.timestamp_font_color = ImageColor.getrgb(color_value)
                 if 'timestamp_shadow_color' in layout_options:
                     color_value = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'timestamp_shadow_color')
                     if color_value is not None and color_value != '':
-                        self.__params.timestamp_shadow_color = ImageColor.getrgb(color_value)
+                        self.parameters.timestamp_shadow_color = ImageColor.getrgb(color_value)
                     else:
-                        self.__params.timestamp_shadow_color = None
+                        self.parameters.timestamp_shadow_color = None
             if ConfigFile.CONFIG_SECTION_HEADER in config:
                 header_options = config.options(ConfigFile.CONFIG_SECTION_HEADER)
                 if 'comment_label' in header_options:
-                    self.__params.comment_label = config.get(ConfigFile.CONFIG_SECTION_HEADER, 'comment_label')
+                    self.parameters.comment_label = config.get(ConfigFile.CONFIG_SECTION_HEADER, 'comment_label')
                 if 'comment_text' in header_options:
-                    self.__params.comment_text = config.get(ConfigFile.CONFIG_SECTION_HEADER, 'comment_text')
+                    self.parameters.comment_text = config.get(ConfigFile.CONFIG_SECTION_HEADER, 'comment_text')
             if ConfigFile.CONFIG_SECTION_VIDEO in config:
                 video_options = config.options(ConfigFile.CONFIG_SECTION_VIDEO)
                 if 'skip_seconds' in video_options:
-                    self.__params.skip_seconds = config.getfloat(ConfigFile.CONFIG_SECTION_VIDEO, 'skip_seconds')
+                    self.parameters.skip_seconds = config.getfloat(ConfigFile.CONFIG_SECTION_VIDEO, 'skip_seconds')
             if ConfigFile.CONFIG_SECTION_FILE in config:
                 file_options = config.options(ConfigFile.CONFIG_SECTION_FILE)
                 if 'recursive' in file_options:
-                    self.__params.recursive = config.getboolean(ConfigFile.CONFIG_SECTION_FILE, 'recursive')
+                    self.parameters.recursive = config.getboolean(ConfigFile.CONFIG_SECTION_FILE, 'recursive')
                 if 'suffix' in file_options:
-                    self.__params.suffix = config.get(ConfigFile.CONFIG_SECTION_FILE, 'suffix')
+                    self.parameters.suffix = config.get(ConfigFile.CONFIG_SECTION_FILE, 'suffix')
                 if 'jpeg_quality' in file_options:
-                    self.__params.jpeg_quality = config.getint(ConfigFile.CONFIG_SECTION_FILE, 'jpeg_quality')
+                    self.parameters.jpeg_quality = config.getint(ConfigFile.CONFIG_SECTION_FILE, 'jpeg_quality')
                 if 'override_existing' in file_options:
-                    self.__params.override_existing = config.getboolean(ConfigFile.CONFIG_SECTION_FILE, 'override_existing')
+                    self.parameters.override_existing = config.getboolean(ConfigFile.CONFIG_SECTION_FILE, 'override_existing')
                 if 'output_directory' in file_options:
                     output_directory = config.get(ConfigFile.CONFIG_SECTION_FILE, 'output_directory')
                     if output_directory is not None:
-                        self.__params.output_directory = Path(output_directory)
+                        self.parameters.output_directory = Path(output_directory)
             if ConfigFile.CONFIG_SECTION_PROGRAM in config:
                 program_options = config.options(ConfigFile.CONFIG_SECTION_PROGRAM)
                 if 'raise_errors' in program_options:
-                    self.__params.raise_errors = config.getboolean(ConfigFile.CONFIG_SECTION_PROGRAM, 'raise_errors')
+                    self.parameters.raise_errors = config.getboolean(ConfigFile.CONFIG_SECTION_PROGRAM, 'raise_errors')
                 if 'verbose' in program_options:
-                    self.__params.verbose = config.getboolean(ConfigFile.CONFIG_SECTION_PROGRAM, 'verbose')
+                    self.parameters.verbose = config.getboolean(ConfigFile.CONFIG_SECTION_PROGRAM, 'verbose')
 
         # 3. Command line arguments
         # Override default parameters for arguments provided by the user
         args = VideoThumbnailer.__parse_args()
         if args.filename is not None:
-            self.__params.path = Path(args.filename)
+            self.parameters.path = Path(args.filename)
         if args.recursive is not Parameters.DEFAULT_RECURSIVE:
-            self.__params.recursive = args.recursive
+            self.parameters.recursive = args.recursive
         if args.width is not None:
-            self.__params.width = args.width
+            self.parameters.width = args.width
         if args.columns is not None:
-            self.__params.columns = args.columns
+            self.parameters.columns = args.columns
         if args.rows is not None:
-            self.__params.rows = args.rows
+            self.parameters.rows = args.rows
         if args.vertical_video_columns is not None:
-            self.__params.vertical_video_columns = args.vertical_video_columns
+            self.parameters.vertical_video_columns = args.vertical_video_columns
         if args.vertical_video_rows is not None:
-            self.__params.vertical_video_rows = args.vertical_video_rows
+            self.parameters.vertical_video_rows = args.vertical_video_rows
         if args.spacing is not None:
-            self.__params.spacing = args.spacing
+            self.parameters.spacing = args.spacing
         if args.background_color is not None:
-            self.__params.background_color = ImageColor.getrgb(args.background_color)
+            self.parameters.background_color = ImageColor.getrgb(args.background_color)
         if args.no_header is not Parameters.DEFAULT_NO_HEADER:
-            self.__params.no_header = args.no_header
+            self.parameters.no_header = args.no_header
         if args.header_font is not None:
-            self.__params.header_font_name = args.header_font
+            self.parameters.header_font_name = args.header_font
         if args.header_font_size is not None:
-            self.__params.header_font_size = args.header_font_size
+            self.parameters.header_font_size = args.header_font_size
         if args.header_font_color is not None:
-            self.__params.header_font_color = ImageColor.getrgb(args.header_font_color)
+            self.parameters.header_font_color = ImageColor.getrgb(args.header_font_color)
         if args.timestamp_font is not None:
-            self.__params.timestamp_font_name = args.timestamp_font
+            self.parameters.timestamp_font_name = args.timestamp_font
         if args.timestamp_font_size is not None:
-            self.__params.timestamp_font_size = args.timestamp_font_size
+            self.parameters.timestamp_font_size = args.timestamp_font_size
         if args.timestamp_font_color is not None:
-            self.__params.timestamp_font_color = ImageColor.getrgb(args.timestamp_font_color)
+            self.parameters.timestamp_font_color = ImageColor.getrgb(args.timestamp_font_color)
         if args.timestamp_shadow_color is not None:
-            self.__params.timestamp_shadow_color = ImageColor.getrgb(args.timestamp_shadow_color)
+            self.parameters.timestamp_shadow_color = ImageColor.getrgb(args.timestamp_shadow_color)
         if args.comment_label is not None:
-            self.__params.comment_label = args.comment_label
+            self.parameters.comment_label = args.comment_label
         if args.comment_text is not None:
-            self.__params.comment_text = args.comment_text
+            self.parameters.comment_text = args.comment_text
         if args.skip_seconds is not None:
-            self.__params.skip_seconds = args.skip_seconds
+            self.parameters.skip_seconds = args.skip_seconds
         if args.suffix is not None:
-            self.__params.suffix = args.suffix
+            self.parameters.suffix = args.suffix
         if args.jpeg_quality is not None:
-            self.__params.jpeg_quality = args.jpeg_quality
+            self.parameters.jpeg_quality = args.jpeg_quality
         if args.override_existing is not Parameters.DEFAULT_OVERRIDE_EXISTING:
-            self.__params.override_existing = args.override_existing
+            self.parameters.override_existing = args.override_existing
         if args.output_directory is not None:
-            self.__params.output_directory = Path(args.output_directory)
+            self.parameters.output_directory = Path(args.output_directory)
         if args.raise_errors is not Parameters.DEFAULT_RAISE_ERRORS:
-            self.__params.raise_errors = args.raise_errors
+            self.parameters.raise_errors = args.raise_errors
         if args.verbose is not Parameters.DEFAULT_VERBOSE:
-            self.__params.verbose = args.verbose
-
-    def parameters(self) -> Parameters:
-        """
-        Returns the parameters of this Python Video Thumbnailer instance.
-
-        Returns:
-        Parameters: The parameters, this Python Video Thumbnailer instance is working with.
-        """
-        return self.__params
+            self.parameters.verbose = args.verbose
 
     def add_video_extension(self, extension: str) -> None:
         """
@@ -670,16 +661,16 @@ class VideoThumbnailer:
         file_path (Path): The path of the video file, for which to create preview thumbnails.
         """
         # The path, where the created preview thumbnails image file should be saved.
-        if self.__params.suffix is None:
-            self.__params.suffix = ''
+        if self.parameters.suffix is None:
+            self.parameters.suffix = ''
         image_path = None
-        if self.__params.output_directory is None:
-            image_path = Path('{}{}.jpg'.format(file_path, self.__params.suffix))
+        if self.parameters.output_directory is None:
+            image_path = Path('{}{}.jpg'.format(file_path, self.parameters.suffix))
         else:
-            image_path = self.__params.output_directory / '{}{}.jpg'.format(file_path.name, self.__params.suffix)
+            image_path = self.parameters.output_directory / '{}{}.jpg'.format(file_path.name, self.parameters.suffix)
 
         if image_path.exists():
-            if not self.__params.override_existing:
+            if not self.parameters.override_existing:
                 print('The path, where the preview image should be saved already exists, but shall not be overridden. Canceling creation of \'{}\'.'.format(image_path.absolute()), file=sys.stderr)
                 return
             elif not image_path.is_file():
@@ -693,9 +684,9 @@ class VideoThumbnailer:
         thumbnails_image = self.create_preview_thumbnails_for(file_path)
 
         # Save the preview thumbnails image
-        if self.__params.verbose:
+        if self.parameters.verbose:
             print('Saving preview thumbnails image to \'{}\''.format(image_path))
-        thumbnails_image.save(image_path, quality=self.__params.jpeg_quality)
+        thumbnails_image.save(image_path, quality=self.parameters.jpeg_quality)
 
         print('Done.')
 
@@ -732,7 +723,7 @@ class VideoThumbnailer:
             else:
                 continue
 
-            if self.__params.verbose:
+            if self.parameters.verbose:
                 print('{} metadata:'.format(track.track_type))
                 for key, value in sorted(metadata.items()):
                     print('{}: {}'.format(key, value))
@@ -759,22 +750,22 @@ class VideoThumbnailer:
             raise VideoThumbnailerException('Video stream in \'{}\' has no duration set in metadata. Cannot calculate preview timestamps.'.format(file_path))
 
         # The number of preview thumbnail columns and rows
-        columns = self.__params.columns
-        rows = self.__params.rows
+        columns = self.parameters.columns
+        rows = self.parameters.rows
         # Use a different number of columns and rows in case of vertical videos, if requested
         if video_aspect < 1:
-            if self.__params.vertical_video_columns is not None:
-                columns = self.__params.vertical_video_columns
-            if self.__params.vertical_video_rows is not None:
-                rows = self.__params.vertical_video_rows
+            if self.parameters.vertical_video_columns is not None:
+                columns = self.parameters.vertical_video_columns
+            if self.parameters.vertical_video_rows is not None:
+                rows = self.parameters.vertical_video_rows
 
         # The number of thumbnail images to capture
         number_thumbnails = rows * columns
-        if self.__params.skip_seconds >= duration:
-            print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(self.__params.skip_seconds, duration), file=sys.stderr)
+        if self.parameters.skip_seconds >= duration:
+            print('Time to skip at the beginning ({} s) is longer than the duration of the video ({} s)!'.format(self.parameters.skip_seconds, duration), file=sys.stderr)
             return
         # The time step for iterating over the clip and capturing thumbnails
-        time_step = (duration - self.__params.skip_seconds) / number_thumbnails
+        time_step = (duration - self.parameters.skip_seconds) / number_thumbnails
         if time_step < 1.0 / fps:
             print('Video clip is too short to generate {} distinct preview thumbnails'.format(number_thumbnails), file=sys.stderr)
             return
@@ -810,7 +801,7 @@ class VideoThumbnailer:
                 else:
                     video_info += ', {}'.format(value)
             except KeyError as e:
-                if self.__params.verbose:
+                if self.parameters.verbose:
                     print('Missing video metadata: {}'.format(e), file=sys.stderr)
 
         audio_info = None
@@ -835,7 +826,7 @@ class VideoThumbnailer:
                     else:
                         audio_info += ', {}'.format(value)
                 except KeyError as e:
-                    if self.__params.verbose:
+                    if self.parameters.verbose:
                         print('Missing audio metadata: {}'.format(e), file=sys.stderr)
         else:
             audio_info = 'None'
@@ -844,13 +835,13 @@ class VideoThumbnailer:
         audio_info = 'Audio: {}'.format(audio_info)
 
         comment = None
-        if self.__params.comment_text is not None:
-            comment_label = self.__params.comment_label
+        if self.parameters.comment_text is not None:
+            comment_label = self.parameters.comment_label
             if not comment_label.endswith(':'):
                 comment_label = '{}:'.format(comment_label)
-            comment = '{} {}'.format(comment_label, self.__params.comment_text)
+            comment = '{} {}'.format(comment_label, self.parameters.comment_text)
 
-        if self.__params.verbose:
+        if self.parameters.verbose:
             print(file_info)
             print(size_info)
             print(video_info)
@@ -859,12 +850,12 @@ class VideoThumbnailer:
                 print(comment)
 
         # Vertical (x) and horizontal (y) spacing between and around the preview thumbnails
-        x_spacing = self.__params.spacing
-        y_spacing = self.__params.spacing
+        x_spacing = self.parameters.spacing
+        y_spacing = self.parameters.spacing
 
         # Height of the header with the metadata
         header_height = 0
-        if not self.__params.no_header:
+        if not self.parameters.no_header:
             # Spacing between the header text lines
             text_line_spacing = 2
 
@@ -891,52 +882,52 @@ class VideoThumbnailer:
                 header_height += text_height_comment
 
         # Width and height of the individual preview thumbnails
-        thumbnail_width = float(self.__params.width - x_spacing * (columns + 1)) / float(columns)
+        thumbnail_width = float(self.parameters.width - x_spacing * (columns + 1)) / float(columns)
         thumbnail_height = int(thumbnail_width / video_aspect)
         thumbnail_width = int(thumbnail_width)
         # Recompute image width, because actual width of the preview thumbnails may be a few pixels less due to scaling and rounding to integer pixels
         image_width = thumbnail_width * columns + x_spacing * (columns + 1)
         image_height = header_height + thumbnail_height * rows + y_spacing * (rows + 1)
 
-        if self.__params.verbose:
+        if self.parameters.verbose:
             print('Image dimensions: {} x {} -> {} x {} thumbnails with dimensions {} x {}'.format(image_width, image_height, columns, rows, thumbnail_width, thumbnail_height))
 
         # PIL image for the preview thumbnails
-        thumbnails_image = Image.new('RGB', (image_width, image_height), color=self.__params.background_color)
+        thumbnails_image = Image.new('RGB', (image_width, image_height), color=self.parameters.background_color)
         # PIL draw for adding text to the image
         thumbnails_draw = ImageDraw.Draw(thumbnails_image)
 
         # Drawing the header text
-        if not self.__params.no_header:
+        if not self.parameters.no_header:
             x = x_spacing
             y = y_spacing
-            thumbnails_draw.text((x, y), file_info, self.__params.header_font_color, font=self.__header_font)
+            thumbnails_draw.text((x, y), file_info, self.parameters.header_font_color, font=self.__header_font)
             y += text_height_file_info
             y += text_line_spacing
-            thumbnails_draw.text((x, y), size_info, self.__params.header_font_color, font=self.__header_font)
+            thumbnails_draw.text((x, y), size_info, self.parameters.header_font_color, font=self.__header_font)
             y += text_height_size_info
             y += text_line_spacing
-            thumbnails_draw.text((x, y), video_info, self.__params.header_font_color, font=self.__header_font)
+            thumbnails_draw.text((x, y), video_info, self.parameters.header_font_color, font=self.__header_font)
             y += text_height_video_info
             y += text_line_spacing
-            thumbnails_draw.text((x, y), audio_info, self.__params.header_font_color, font=self.__header_font)
+            thumbnails_draw.text((x, y), audio_info, self.parameters.header_font_color, font=self.__header_font)
             if comment is not None:
                 y += text_height_comment
                 y += text_line_spacing
-                thumbnails_draw.text((x, y), comment, self.__params.header_font_color, font=self.__header_font)
+                thumbnails_draw.text((x, y), comment, self.parameters.header_font_color, font=self.__header_font)
 
         # Font for timestamp texts
         timestamp_font = None
-        if self.__params.timestamp_font_name is None:
+        if self.parameters.timestamp_font_name is None:
             timestamp_font = ImageFont.load_default()
         else:
-            timestamp_font = ImageFont.truetype(font=self.__params.timestamp_font_name, size=self.__params.timestamp_font_size)
+            timestamp_font = ImageFont.truetype(font=self.parameters.timestamp_font_name, size=self.parameters.timestamp_font_size)
         x_spacing_timestamp = 2
         y_spacing_timestamp = 3
         timestamp_shadow_offset = 1
 
         # Video time at which to capture the next preview
-        time = self.__params.skip_seconds
+        time = self.parameters.skip_seconds
         thumbnail_count = 0
 
         # Iterate over rows and columns creating and placing the preview thumbnails
@@ -971,13 +962,13 @@ class VideoThumbnailer:
                 timestamp_position = (x_timestamp, y_timestamp)
                 shadow_position = (x_timestamp + timestamp_shadow_offset, y_timestamp + timestamp_shadow_offset)
                 # Black timestamp 'shadow'
-                if self.__params.timestamp_shadow_color is not None:
-                    thumbnails_draw.text(shadow_position, formatted_time, self.__params.timestamp_shadow_color, font=timestamp_font)
+                if self.parameters.timestamp_shadow_color is not None:
+                    thumbnails_draw.text(shadow_position, formatted_time, self.parameters.timestamp_shadow_color, font=timestamp_font)
                 # White timestamp text
-                thumbnails_draw.text(timestamp_position, formatted_time, self.__params.timestamp_font_color, font=timestamp_font)
+                thumbnails_draw.text(timestamp_position, formatted_time, self.parameters.timestamp_font_color, font=timestamp_font)
 
                 thumbnail_count += 1
-                if self.__params.verbose:
+                if self.parameters.verbose:
                     print('Captured preview thumbnail #{} of frame at {:.3f} s'.format(thumbnail_count, time))
                 time += time_step
 
@@ -1037,14 +1028,14 @@ class VideoThumbnailer:
         # If path is a file, just 'iterate' over this single file.
         for path in paths_to_process:
             # If recursive, call the process method on any subdirectories
-            if self.__params.recursive and path.is_dir():
+            if self.parameters.recursive and path.is_dir():
                 self.process_file_or_directory(path)
             # Create preview thumbnails of (potential) video files
             elif path.is_file() and self.has_recognized_video_extension(path.name):
                 try:
                     self.create_and_save_preview_thumbnails_for(path)
                 except Exception as e:
-                    if self.__params.raise_errors:
+                    if self.parameters.raise_errors:
                         raise e
                     else:
                         print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, path.absolute()), file=sys.stderr)
@@ -1054,7 +1045,7 @@ class VideoThumbnailer:
         Starts creating preview thumbnails of the specified file, in the specified directory or
         in the current directory.
         """
-        self.process_file_or_directory(self.__params.path)
+        self.process_file_or_directory(self.parameters.path)
 
 if __name__ == '__main__':
     try:
