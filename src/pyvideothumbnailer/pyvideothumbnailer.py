@@ -20,6 +20,7 @@ For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 
 from __future__ import annotations
 
+from pathlib import Path
 import os
 import sys
 
@@ -45,7 +46,7 @@ class Parameters:
     Parameters of Python Video Thumbnailer.
     """
 
-    DEFAULT_PATH = os.getcwd()
+    DEFAULT_PATH = Path.cwd()
     DEFAULT_RECURSIVE = False
     DEFAULT_WIDTH = 800
     DEFAULT_COLUMNS = 4
@@ -72,19 +73,19 @@ class Parameters:
     DEFAULT_RAISE_ERRORS = False
     DEFAULT_VERBOSE = False
 
-    def __init__(self, path: str, recursive: bool, width: int, columns: int, rows: int,
+    def __init__(self, path: Path, recursive: bool, width: int, columns: int, rows: int,
                  vertical_video_columns: int, vertical_video_rows: int, spacing: int,
                  background_color: str, no_header: bool, header_font_name: str, header_font_size: int, header_font_color: str,
                  timestamp_font_name: str, timestamp_font_size: int, timestamp_font_color: str, timestamp_shadow_color: str,
                  comment_label: str, comment_text: str,
-                 skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory: str,
+                 skip_seconds: float, suffix: str, jpeg_quality: int, override_existing: bool, output_directory: Path,
                  raise_errors: bool, verbose: bool):
         """
         Constructor for an instance of the object holding all of the parameters of Python Video Thumbnailer.
 
         Parameters:
-        path (str): The path of the video file of which to create a preview thumbnails image
-                    or the path of the directory, where video files are located of which to create preview images.
+        path (Path): The path of the video file of which to create a preview thumbnails image
+                     or the path of the directory, where video files are located of which to create preview images.
         recursive (bool): If path is a directory and True, process any subdirectories as well.
         width (int): The width in pixels of the created preview thumbnails image.
         columns (int): The number of thumbnail columns.
@@ -118,8 +119,8 @@ class Parameters:
         suffix (str): An optional suffix to append to the file name of the generated preview thumbnails images.
         jpeg_quality (int): The quality of the JPEG image file that is created.
         override_existing (bool): If True, override image files that exist by the same name as the created image files.
-        output_directory (str): A directory, where all created preview thumbnails images should be saved.
-                                If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
+        output_directory (Path): A directory, where all created preview thumbnails images should be saved.
+                                 If omitted, preview thumbnails images are saved in the same directory, where the respective video file is located.
         raise_errors (bool): If True, raise an error, if it occurs during processing. If False, just print the error and proceed.
         verbose (bool): Print verbose information and messages.
         """
@@ -201,15 +202,14 @@ class ConfigFile:
     CONFIG_SECTION_PROGRAM = 'Program'
 
     @staticmethod
-    def get_config_file_path() -> str:
+    def get_config_file_path() -> Path:
         """
         Returns the path, where the user configuration file of Python Video Thumbnailer is expected.
 
         Returns:
-        str: The absolute path of the user configuration file of Python Video Thumbnailer.
+        Path: The absolute path of the user configuration file of Python Video Thumbnailer.
         """
-        user_home = os.path.expanduser('~')
-        return os.path.join(user_home, ConfigFile.CONFIG_FILE_NAME)
+        return Path.home() / ConfigFile.CONFIG_FILE_NAME
 
 class Helper:
     """
@@ -324,15 +324,15 @@ class VideoThumbnailer:
         # Take care of optional output directory
         if self.__params.output_directory is not None:
             # If the directory does not yet exist, create it recursively
-            if not os.path.exists(self.__params.output_directory):
+            if not self.__params.output_directory.exists():
                 try:
-                    os.makedirs(self.__params.output_directory)
+                    self.__params.output_directory.mkdir(parents=True, exist_ok=True)
                 except Exception as e:
-                    message = 'Unable to create output directory \'{}\': {}'.format(os.path.abspath(self.__params.output_directory), e)
+                    message = 'Unable to create output directory \'{}\': {}'.format(self.__params.output_directory.absolute(), e)
                     raise VideoThumbnailerException(message)
             # Exit if the path of the directory already exists, but is not a directory
-            elif not os.path.isdir(self.__params.output_directory):
-                message = 'Path of the output directory already exists and is not a directory: \'{}\''.format(os.path.abspath(self.__params.output_directory))
+            elif not self.__params.output_directory.is_dir():
+                message = 'Path of the output directory already exists and is not a directory: \'{}\''.format(self.__params.output_directory.absolute())
                 raise VideoThumbnailerException(message)
 
         self.__video_extensions = VideoThumbnailer.DEFAULT_VIDEO_EXTENSIONS
@@ -474,9 +474,9 @@ class VideoThumbnailer:
         # 2. Parameters from user-specific configuration file
         # Read the parameters, if the configuration file exists
         config_file = ConfigFile.get_config_file_path()
-        if os.path.isfile(config_file):
+        if config_file.is_file():
             config = ConfigParser(allow_no_value=True)
-            config.read(config_file)
+            config.read(str(config_file.absolute()))
             if ConfigFile.CONFIG_SECTION_LAYOUT in config:
                 layout_options = config.options(ConfigFile.CONFIG_SECTION_LAYOUT)
                 if 'width' in layout_options:
@@ -536,7 +536,9 @@ class VideoThumbnailer:
                 if 'override_existing' in file_options:
                     self.__params.override_existing = config.getboolean(ConfigFile.CONFIG_SECTION_FILE, 'override_existing')
                 if 'output_directory' in file_options:
-                    self.__params.output_directory = config.get(ConfigFile.CONFIG_SECTION_FILE, 'output_directory')
+                    output_directory = config.get(ConfigFile.CONFIG_SECTION_FILE, 'output_directory')
+                    if output_directory is not None:
+                        self.__params.output_directory = Path(output_directory)
             if ConfigFile.CONFIG_SECTION_PROGRAM in config:
                 program_options = config.options(ConfigFile.CONFIG_SECTION_PROGRAM)
                 if 'raise_errors' in program_options:
@@ -548,7 +550,7 @@ class VideoThumbnailer:
         # Override default parameters for arguments provided by the user
         args = VideoThumbnailer.__parse_args()
         if args.filename is not None:
-            self.__params.path = args.filename
+            self.__params.path = Path(args.filename)
         if args.recursive is not Parameters.DEFAULT_RECURSIVE:
             self.__params.recursive = args.recursive
         if args.width is not None:
@@ -594,7 +596,7 @@ class VideoThumbnailer:
         if args.override_existing is not Parameters.DEFAULT_OVERRIDE_EXISTING:
             self.__params.override_existing = args.override_existing
         if args.output_directory is not None:
-            self.__params.output_directory = args.output_directory
+            self.__params.output_directory = Path(args.output_directory)
         if args.raise_errors is not Parameters.DEFAULT_RAISE_ERRORS:
             self.__params.raise_errors = args.raise_errors
         if args.verbose is not Parameters.DEFAULT_VERBOSE:
@@ -658,36 +660,36 @@ class VideoThumbnailer:
             video_extensions.add(extension)
         self.__video_extensions = tuple(video_extensions)
 
-    def create_preview_thumbnails_for(self, file_path: str) -> None:
+    def create_preview_thumbnails_for(self, file_path: Path) -> None:
         """
         Create preview thumbnails for a specified video file.
 
         Parameters:
-        file_path (str): The path of the video file, for which to create preview thumbnails.
+        file_path (Path): The path of the video file, for which to create preview thumbnails.
         """
         # The path, where the created preview thumbnails image file should be saved.
         if self.__params.suffix is None:
             self.__params.suffix = ''
         image_path = None
         if self.__params.output_directory is None:
-            image_path = '{}{}.jpg'.format(file_path, self.__params.suffix)
+            image_path = Path('{}{}.jpg'.format(file_path, self.__params.suffix))
         else:
-            image_path = os.path.join(self.__params.output_directory, '{}{}.jpg'.format(os.path.basename(file_path), self.__params.suffix))
+            image_path = self.__params.output_directory / '{}{}.jpg'.format(file_path.name, self.__params.suffix)
 
-        if os.path.exists(image_path):
+        if image_path.exists():
             if not self.__params.override_existing:
-                print('The path, where the preview image should be saved already exists, but shall not be overridden. Canceling creation of \'{}\'.'.format(os.path.abspath(image_path)), file=sys.stderr)
+                print('The path, where the preview image should be saved already exists, but shall not be overridden. Canceling creation of \'{}\'.'.format(image_path.absolute()), file=sys.stderr)
                 return
-            elif not os.path.isfile(image_path):
-                print('The path, where the preview image should be saved already exists, but is not a file. Canceling creation of \'{}\'.'.format(os.path.abspath(image_path)), file=sys.stderr)
+            elif not image_path.is_file():
+                print('The path, where the preview image should be saved already exists, but is not a file. Canceling creation of \'{}\'.'.format(image_path.absolute()), file=sys.stderr)
                 return
             else:
-                print('The file \'{}\' already exists and will be overridden as requested.'.format(os.path.abspath(image_path)))
+                print('The file \'{}\' already exists and will be overridden as requested.'.format(image_path.absolute()))
 
-        print('Creating preview thumbnails for \'{}\' ...'.format(os.path.abspath(file_path)))
+        print('Creating preview thumbnails for \'{}\' ...'.format(file_path.absolute()))
 
         # Open the video file.
-        container = av.open(file_path)
+        container = av.open(str(file_path))
         video_stream =  container.streams.video[0]
 
         # Parse the metadata from the video file
@@ -757,7 +759,7 @@ class VideoThumbnailer:
 
         # Header for the preview thumbnails image providing file and metadata information
         # File information
-        file_info = 'File: {}'.format(os.path.basename(file_path))
+        file_info = 'File: {}'.format(file_path.name)
 
         file_size = int(general_metadata['file_size'])
         size_info = None
@@ -981,7 +983,7 @@ class VideoThumbnailer:
         """
         return file_name.lower().endswith(self.__video_extensions)
 
-    def process_file_or_directory(self, path: str) -> None:
+    def process_file_or_directory(self, path: Path) -> None:
         """
         Process a file or directory and create preview thumbnails of identified video files.
 
@@ -990,50 +992,45 @@ class VideoThumbnailer:
         This is done in a recursive way, if recursion is enabled in the parameters.
 
         Parameters:
-        path (str): The path of the video file to process or the path of the directory, in which to process video files.
+        path (Path): The path of the video file to process or the path of the directory, in which to process video files.
         """
         # List of files and directories to process
-        file_names = None
+        paths_to_process = None
         # If the path is a directory, list its contents
-        if os.path.isdir(path):
+        if path.is_dir():
             if not os.access(path, os.X_OK | os.W_OK):
-                print('Cannot consider directory \'{}\'. Permission for writing files to it is denied.'.format(os.path.abspath(path)))
+                print('Cannot consider directory \'{}\'. Permission for writing files to it is denied.'.format(path.absolute()))
                 return
-            file_names = sorted(os.listdir(path))
-        # If the path is a file, get its dirname and basename
-        elif os.path.isfile(path):
+            paths_to_process = sorted(path.iterdir())
+        # If the path is a file
+        elif path.is_file():
             if not os.access(path, os.R_OK):
-                print('Cannot consider video file \'{}\'. Permission for reading it is denied.'.format(os.path.abspath(path)))
+                print('Cannot consider video file \'{}\'. Permission for reading it is denied.'.format(path.absolute()))
                 return
-            path_elements = os.path.split(path)
-            # dirname
-            path = path_elements[0]
-            file_name = path_elements[1]
-            if not os.access(path, os.X_OK | os.W_OK):
-                print('Cannot consider video file \'{}\'. Permission for writing files to its directory \'{}\' is denied.'.format(file_name, os.path.abspath(path)))
+            if not os.access(path.parent, os.X_OK | os.W_OK):
+                print('Cannot consider video file \'{}\'. Permission for writing files to its directory \'{}\' is denied.'.format(path.name, path.parent.absolute()))
                 return
-            # basename (as sole element in a list to be compatible with iteration below)
-            file_names = [file_name]
+            # Path of the file (as sole element in a list to be compatible with iteration below)
+            paths_to_process = [path]
         else:
-            print('Path \'{}\' is neither a file nor a directory.'.format(os.path.abspath(path)))
+            print('Path \'{}\' is neither a file nor a directory.'.format(path.absolute()))
             return
 
         # If path is a directory, iterate over the contained files and directories.
         # If path is a file, just 'iterate' over this single file.
-        for file_name in file_names:
-            file_path = os.path.join(path, file_name)
+        for path in paths_to_process:
             # If recursive, call the process method on any subdirectories
-            if self.__params.recursive and os.path.isdir(file_path):
-                self.process_file_or_directory(file_path)
+            if self.__params.recursive and path.is_dir():
+                self.process_file_or_directory(path)
             # Create preview thumbnails of (potential) video files
-            elif os.path.isfile(file_path) and self.has_recognized_video_extension(file_name):
+            elif path.is_file() and self.has_recognized_video_extension(path.name):
                 try:
-                    self.create_preview_thumbnails_for(file_path)
+                    self.create_preview_thumbnails_for(path)
                 except Exception as e:
                     if self.__params.raise_errors:
                         raise e
                     else:
-                        print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, os.path.abspath(file_path)), file=sys.stderr)
+                        print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, path.absolute()), file=sys.stderr)
 
     def create_preview_thumbnails(self):
         """
