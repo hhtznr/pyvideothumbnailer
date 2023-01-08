@@ -661,9 +661,10 @@ class VideoThumbnailer:
             video_extensions.add(extension)
         self.__video_extensions = tuple(video_extensions)
 
-    def create_preview_thumbnails_for(self, file_path: Path) -> None:
+    def create_and_save_preview_thumbnails_for(self, file_path: Path) -> None:
         """
-        Create preview thumbnails for a specified video file.
+        Creates preview thumbnails for a specified video file and save them to an image file
+        according to the video file name and the directory and naming presets.
 
         Parameters:
         file_path (Path): The path of the video file, for which to create preview thumbnails.
@@ -688,6 +689,26 @@ class VideoThumbnailer:
                 print('The file \'{}\' already exists and will be overridden as requested.'.format(image_path.absolute()))
 
         print('Creating preview thumbnails for \'{}\' ...'.format(file_path.absolute()))
+
+        thumbnails_image = self.create_preview_thumbnails_for(file_path)
+
+        # Save the preview thumbnails image
+        if self.__params.verbose:
+            print('Saving preview thumbnails image to \'{}\''.format(image_path))
+        thumbnails_image.save(image_path, quality=self.__params.jpeg_quality)
+
+        print('Done.')
+
+    def create_preview_thumbnails_for(self, file_path: Path) -> Image:
+        """
+        Creates preview thumbnails for a specified video file and return the created in-memory image.
+
+        Parameters:
+        file_path (Path): The path of the video file, for which to create preview thumbnails.
+
+        Returns:
+        Image: A PIL image with the preview thumbnails.
+        """
 
         # Open the video file.
         container = av.open(str(file_path))
@@ -960,14 +981,9 @@ class VideoThumbnailer:
                     print('Captured preview thumbnail #{} of frame at {:.3f} s'.format(thumbnail_count, time))
                 time += time_step
 
-        # Save the preview thumbnails image
-        if self.__params.verbose:
-            print('Saving preview thumbnails image to \'{}\''.format(image_path))
-        thumbnails_image.save(image_path, quality=self.__params.jpeg_quality)
-
         # Close the video clip
         container.close()
-        print('Done.')
+        return thumbnails_image
 
     def has_recognized_video_extension(self, file_name: str) -> bool:
         """
@@ -1026,14 +1042,14 @@ class VideoThumbnailer:
             # Create preview thumbnails of (potential) video files
             elif path.is_file() and self.has_recognized_video_extension(path.name):
                 try:
-                    self.create_preview_thumbnails_for(path)
+                    self.create_and_save_preview_thumbnails_for(path)
                 except Exception as e:
                     if self.__params.raise_errors:
                         raise e
                     else:
                         print('An error occurred:\n{}\nSkipping file \'{}\'.'.format(e, path.absolute()), file=sys.stderr)
 
-    def create_preview_thumbnails(self):
+    def create_and_save_preview_thumbnails(self):
         """
         Starts creating preview thumbnails of the specified file, in the specified directory or
         in the current directory.
@@ -1047,4 +1063,4 @@ if __name__ == '__main__':
         print(e, file=sys.stderr)
         sys.exit(1)
 
-    video_thumbnailer.create_preview_thumbnails()
+    video_thumbnailer.create_and_save_preview_thumbnails()
