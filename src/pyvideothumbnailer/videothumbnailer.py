@@ -13,11 +13,11 @@ It is based on PyAV, MediaInfo and PIL/Pillow.
 For usage and available options, run with the option ```--help```.
 
 For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
-
-@Author  :    Harald Hetzner
-@License :    BSD 3-Clause License
-@Version :    1.2.0
 """
+
+__author__ = 'Harald Hetzner'
+__license__ = 'BSD 3-Clause License'
+__version__ = '2.0.0'
 
 from __future__ import annotations
 
