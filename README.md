@@ -10,17 +10,20 @@ Pyhton Video Thumbnailer has the following dependencies:
   * [MediaInfo](https://github.com/sbraz/pymediainfo)
   * PIL/[Pillow](https://python-pillow.org/)
 
-The python packages can be installed using the _Python Package Installer_:
+Python Video Thumbnailer can be installed from [PyPI](https://pypi.org/project/pyvideothumbnailer/) using the *Python Package Installer*:
 
 ```
-pip3 install av pymediainfo Pillow
+python3 -m pip install pyvideothumbnailer
 ```
 
-All code of Python Video Thumbnailer is contained in the file [pyvideothumbnailer](https://github.com/hhtznr/pyvideothumbnailer/blob/master/pyvideothumbnailer). It can be placed in `/usr/local/bin` or another directory on the system PATH variable and be made executable. Alternatively, it can be invoked by supplying its path as argument to the Python interpreter `python3`.
+As of [Ubuntu](https://ubuntu.com/) 22.04 LTS (Jammy Jellyfish), Ubuntu users can alternatively install a DEB package from this [Ubuntu PPA](https://launchpad.net/~haraldhetzner/+archive/ubuntu/ppa).
+
+```
+sudo add-apt-repository ppa:haraldhetzner/ppa
+sudo apt update
+```
 
 The optional configuration file [.pyvideothumbnailer.conf](https://github.com/hhtznr/pyvideothumbnailer/blob/master/.pyvideothumbnailer.conf) needs to be placed in the user's home directory.
-
-As of [Ubuntu](https://ubuntu.com/) 22.04 LTS (Jammy Jellyfish), Ubuntu users can alternatively install the DEB package provided in the [release section](https://github.com/hhtznr/pyvideothumbnailer/releases) or install from this [Ubuntu PPA](https://launchpad.net/~haraldhetzner/+archive/ubuntu/ppa).
 
 ## Usage
 
