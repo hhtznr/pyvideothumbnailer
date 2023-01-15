@@ -15,10 +15,6 @@ For usage and available options, run with the option ```--help```.
 For further reference: https://github.com/hhtznr/pyvideothumbnailer/wiki
 """
 
-__author__ = 'Harald Hetzner'
-__license__ = 'BSD 3-Clause License'
-__version__ = '2.0.0'
-
 from __future__ import annotations
 
 from pathlib import Path
@@ -41,6 +37,10 @@ from PIL import Image
 from PIL import ImageColor
 from PIL import ImageDraw
 from PIL import ImageFont
+
+__author__ = 'Harald Hetzner'
+__license__ = 'BSD 3-Clause License'
+__version__ = '2.0.1'
 
 class Parameters:
     """
