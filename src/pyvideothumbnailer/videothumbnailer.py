@@ -1047,7 +1047,7 @@ class VideoThumbnailer:
         """
         self.process_file_or_directory(self.parameters.path)
 
-if __name__ == '__main__':
+def main():
     try:
         video_thumbnailer = VideoThumbnailer()
     except VideoThumbnailerException as e:
@@ -1055,3 +1055,6 @@ if __name__ == '__main__':
         sys.exit(1)
 
     video_thumbnailer.create_and_save_preview_thumbnails()
+
+if __name__ == '__main__':
+    main()
