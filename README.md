@@ -21,6 +21,7 @@ As of [Ubuntu](https://ubuntu.com/) 22.04 LTS (Jammy Jellyfish), Ubuntu users ca
 ```
 sudo add-apt-repository ppa:haraldhetzner/ppa
 sudo apt update
+sudo apt install python3-pyvideothumbnailer
 ```
 
 The optional configuration file [.pyvideothumbnailer.conf](https://github.com/hhtznr/pyvideothumbnailer/blob/master/.pyvideothumbnailer.conf) needs to be placed in the user's home directory.
