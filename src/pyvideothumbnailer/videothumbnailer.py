@@ -314,7 +314,8 @@ class VideoThumbnailer:
                                 '.mov',
                                 '.mp4',
                                 '.mpg',
-                                '.wmv')
+                                '.wmv',
+                                '.mts')
 
     def __init__(self):
         """
@@ -374,7 +375,7 @@ class VideoThumbnailer:
         parser.add_argument('--rows',
                              type=int,
                              help='The number of preview thumbnail rows.')
-        parser.add_argument('---vertical-video-columns',
+        parser.add_argument('--vertical-video-columns',
                              type=int,
                              help='The number of preview thumbnail columns in place of \'--columns\' in case of vertical videos.')
         parser.add_argument('--vertical-video-rows',
