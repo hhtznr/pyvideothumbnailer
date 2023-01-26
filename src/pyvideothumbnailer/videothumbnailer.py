@@ -40,7 +40,7 @@ from PIL import ImageFont
 
 __author__ = 'Harald Hetzner'
 __license__ = 'BSD 3-Clause License'
-__version__ = '2.0.1'
+__version__ = '2.0.2'
 
 class Parameters:
     """
