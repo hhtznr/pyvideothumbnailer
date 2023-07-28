@@ -40,7 +40,7 @@ from PIL import ImageFont
 
 __author__ = 'Harald Hetzner'
 __license__ = 'BSD 3-Clause License'
-__version__ = '2.0.2'
+__version__ = '2.0.3'
 
 class Parameters:
     """
@@ -493,6 +493,10 @@ class VideoThumbnailer:
                     self.parameters.vertical_video_rows = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'vertical_video_rows')
                 if 'spacing' in layout_options:
                     self.parameters.spacing = config.getint(ConfigFile.CONFIG_SECTION_LAYOUT, 'spacing')
+                if 'background_color' in layout_options:
+                    color_value = config.get(ConfigFile.CONFIG_SECTION_LAYOUT, 'background_color')
+                    if color_value is not None and color_value != '':
+                        self.parameters.background_color= ImageColor.getrgb(color_value)
                 if 'no_header' in layout_options:
                     self.parameters.no_header = config.getboolean(ConfigFile.CONFIG_SECTION_LAYOUT, 'no_header')
                 if 'header_font' in layout_options:
