@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyvideothumbnailer"
-version = "2.0.3"
+version = "2.0.4"
 authors = [
   { name="Harald Hetzner", email="57875126+hhtznr@users.noreply.github.com" },
 ]

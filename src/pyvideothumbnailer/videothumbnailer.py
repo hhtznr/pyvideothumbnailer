@@ -40,7 +40,7 @@ from PIL import ImageFont
 
 __author__ = 'Harald Hetzner'
 __license__ = 'BSD 3-Clause License'
-__version__ = '2.0.3'
+__version__ = '2.0.4'
 
 class Parameters:
     """
@@ -335,6 +335,14 @@ class VideoThumbnailer:
             # Exit if the path of the directory already exists, but is not a directory
             elif not self.parameters.output_directory.is_dir():
                 message = 'Path of the output directory already exists and is not a directory: \'{}\''.format(self.parameters.output_directory.absolute())
+                raise VideoThumbnailerException(message)
+            # Exit if permission for accessing the output directory is not granted
+            elif not os.access(self.parameters.output_directory, os.X_OK):
+                message = 'Missing permission to access the output directory: \'{}\''.format(self.parameters.output_directory.absolute())
+                raise VideoThumbnailerException(message)
+            # Exit if permissions for writing to the output directory are not granted
+            elif not os.access(self.parameters.output_directory, os.W_OK):
+                message = 'Missing permission to write the output directory: \'{}\''.format(self.parameters.output_directory.absolute())
                 raise VideoThumbnailerException(message)
 
         self.__video_extensions = VideoThumbnailer.DEFAULT_VIDEO_EXTENSIONS
@@ -1011,17 +1019,24 @@ class VideoThumbnailer:
         paths_to_process = None
         # If the path is a directory, list its contents
         if path.is_dir():
-            if self.parameters.output_directory is None and not os.access(path, os.X_OK | os.W_OK):
-                print('Cannot consider directory \'{}\'. Permission for writing files to it is denied.'.format(path.absolute()))
+            if not os.access(path, os.X_OK):
+                print('Cannot consider directory \'{}\'. Permission to access it is denied.'.format(path.absolute()))
+                return
+            if not os.access(path, os.R_OK):
+                print('Cannot consider directory \'{}\'. Permission to list its files is denied.'.format(path.absolute()))
+                return
+            # If output directory is not specified otherwise, ensure write permission to this directory is granted
+            if self.parameters.output_directory is None and not os.access(path, os.W_OK):
+                print('Cannot consider directory \'{}\'. Permission to write files to it is denied.'.format(path.absolute()))
                 return
             paths_to_process = sorted(path.iterdir())
         # If the path is a file
         elif path.is_file():
             if not os.access(path, os.R_OK):
-                print('Cannot consider video file \'{}\'. Permission for reading it is denied.'.format(path.absolute()))
+                print('Cannot consider video file \'{}\'. Permission to read it is denied.'.format(path.absolute()))
                 return
             if self.parameters.output_directory is None and not os.access(path.parent, os.X_OK | os.W_OK):
-                print('Cannot consider video file \'{}\'. Permission for writing files to its directory \'{}\' is denied.'.format(path.name, path.parent.absolute()))
+                print('Cannot consider video file \'{}\'. Permission to write files to its directory \'{}\' is denied.'.format(path.name, path.parent.absolute()))
                 return
             # Path of the file (as sole element in a list to be compatible with iteration below)
             paths_to_process = [path]
