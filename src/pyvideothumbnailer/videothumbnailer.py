@@ -1011,7 +1011,7 @@ class VideoThumbnailer:
         paths_to_process = None
         # If the path is a directory, list its contents
         if path.is_dir():
-            if not os.access(path, os.X_OK | os.W_OK):
+            if self.parameters.output_directory is None and not os.access(path, os.X_OK | os.W_OK):
                 print('Cannot consider directory \'{}\'. Permission for writing files to it is denied.'.format(path.absolute()))
                 return
             paths_to_process = sorted(path.iterdir())
@@ -1020,7 +1020,7 @@ class VideoThumbnailer:
             if not os.access(path, os.R_OK):
                 print('Cannot consider video file \'{}\'. Permission for reading it is denied.'.format(path.absolute()))
                 return
-            if not os.access(path.parent, os.X_OK | os.W_OK):
+            if self.parameters.output_directory is None and not os.access(path.parent, os.X_OK | os.W_OK):
                 print('Cannot consider video file \'{}\'. Permission for writing files to its directory \'{}\' is denied.'.format(path.name, path.parent.absolute()))
                 return
             # Path of the file (as sole element in a list to be compatible with iteration below)
