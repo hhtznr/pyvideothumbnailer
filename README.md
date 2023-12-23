@@ -1,9 +1,9 @@
 # pyvideothumbnailer
-**Pyhton Video Thumbnailer** is a command line tool for creating video preview thumbnails. It can be used to create preview images of individual video files, videos located in a directory and optionally its subdirectories. It is based on [PyAV](https://github.com/PyAV-Org/PyAV), [MediaInfo](https://github.com/sbraz/pymediainfo) and PIL/[Pillow](https://python-pillow.org/).
+**Python Video Thumbnailer** is a command line tool for creating video preview thumbnails. It can be used to create preview images of individual video files, videos located in a directory and optionally its subdirectories. It is based on [PyAV](https://github.com/PyAV-Org/PyAV), [MediaInfo](https://github.com/sbraz/pymediainfo) and PIL/[Pillow](https://python-pillow.org/).
 
 ## Installation
 
-Pyhton Video Thumbnailer has the following dependencies:
+Python Video Thumbnailer has the following dependencies:
 
   * [Python 3](https://www.python.org/downloads/) (3.7 or newer)
   * [PyAV](https://github.com/PyAV-Org/PyAV)

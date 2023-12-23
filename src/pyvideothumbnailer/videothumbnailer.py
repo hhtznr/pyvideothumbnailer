@@ -4,7 +4,7 @@
 """
 Python Video Thumbnailer
 
-Pyhton Video Thumbnailer is a command line tool for creating video preview thumbnails.
+Python Video Thumbnailer is a command line tool for creating video preview thumbnails.
 It can be used to create preview images of individual video files, videos located in
 a directory and optionally its subdirectories.
 
@@ -160,7 +160,7 @@ class Parameters:
         Returns the default parameters for Python Video Thumbnailer.
 
         Returns:
-        Parameters: The Pyhton Video Thumbnailer parameters, initialized with the default values.
+        Parameters: The Python Video Thumbnailer parameters, initialized with the default values.
         """
         return Parameters(Parameters.DEFAULT_PATH,
                           Parameters.DEFAULT_RECURSIVE,
@@ -191,7 +191,7 @@ class Parameters:
 
 class ConfigFile:
     """
-    Configuration file of Pyhton Video Thumbnailer.
+    Configuration file of Python Video Thumbnailer.
     """
 
     CONFIG_FILE_NAME = '.pyvideothumbnailer.conf'
@@ -373,7 +373,7 @@ class VideoThumbnailer:
 
     @staticmethod
     def __parse_args() -> Namespace:
-        parser = ArgumentParser(description='Pyhton Video Thumbnailer. Command line tool for creating video preview thumbnails.')
+        parser = ArgumentParser(description='Python Video Thumbnailer. Command line tool for creating video preview thumbnails.')
         parser.add_argument('--width',
                              type=int,
                              help='The intended width of the preview thumbnails image in px. Actual width may be slightly less due rounding upon scaling.')
