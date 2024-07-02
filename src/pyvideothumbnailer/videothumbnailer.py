@@ -40,7 +40,7 @@ from PIL import ImageFont
 
 __author__ = 'Harald Hetzner'
 __license__ = 'BSD 3-Clause License'
-__version__ = '2.0.4'
+__version__ = '2.1.0'
 
 class Parameters:
     """
@@ -752,6 +752,17 @@ class VideoThumbnailer:
         video_width = int(video_metadata['width'])
         # Height in px
         video_height = int(video_metadata['height'])
+        # Rotation in °
+        video_rotation = 0
+        if 'rotation' in video_metadata.keys():
+            video_rotation = int(float(video_metadata['rotation']))
+            if self.parameters.verbose:
+                print('Video images are rotated by {}° according to metadata.'.format(video_rotation))
+        # Swap width and height if the video is rotated by 90° or 270°
+        if video_rotation in (90, 270):
+            temp = video_width
+            video_width = video_height
+            video_height = temp
         # Aspect ratio
         video_aspect = float(video_width) / float(video_height)
         # Frames per second
@@ -959,7 +970,11 @@ class VideoThumbnailer:
                         # pts = presentation timestamp in time_base units
                         if frame.pts >= target_timestamp:
                             # VideoFrame.to_image() returns a PIL image
-                            image = frame.to_image().resize((thumbnail_width, thumbnail_height))
+                            image = frame.to_image()
+                            # Counterrotate the image if the video is rotated by multiples of 90° according to metadata
+                            if video_rotation in (90, 180, 270):
+                                image = image.rotate(-video_rotation, expand=True)
+                            image = image.resize((thumbnail_width, thumbnail_height))
                             thumbnails_image.paste(image, box=(x, y))
                             frame_captured = True
                             break
